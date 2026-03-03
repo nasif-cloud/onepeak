@@ -1,0 +1,145 @@
+const User = require('../models/User');
+const { cards } = require('../data/cards');
+const { PULL_LIMIT, PULL_RESET_HOURS, PULL_RATES, PITY_TARGET, PITY_DISTRIBUTION } = require('../config');
+const { buildPullEmbed, getAllCardVersions, getCardById } = require('../utils/cards');
+
+function hoursBetween(a, b) {
+  return Math.abs(b - a) / (1000 * 60 * 60);
+}
+
+module.exports = {
+  name: 'pull',
+  description: 'Pull a random card',
+  async execute({ message, interaction }) {
+    const userId = message ? message.author.id : interaction.user.id;
+    const username = message ? message.author.username : interaction.user.username;
+    let user = await User.findOne({ userId });
+    if (!user) {
+      const reply = 'You don\'t have an account. Run `op start` or /start to register.';
+      if (message) return message.reply(reply);
+      return interaction.reply({ content: reply, ephemeral: true });
+    }
+
+    // Reset logic
+    const now = new Date();
+    const hours = hoursBetween(user.lastReset, now);
+    if (hours >= PULL_RESET_HOURS) {
+      user.pullsRemaining = PULL_LIMIT;
+      user.lastReset = now;
+    }
+
+    if (user.pullsRemaining <= 0) {
+      // calculate remaining duration until reset
+      const now = new Date();
+      const nextReset = new Date(user.lastReset.getTime() + PULL_RESET_HOURS * 3600 * 1000);
+      const diffMs = nextReset - now;
+      const hrs = Math.floor(diffMs / (1000 * 60 * 60));
+      const mins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+      const secs = Math.floor((diffMs % (1000 * 60)) / 1000);
+      const timeStr = `${hrs}h ${mins}m ${secs}s`;
+      const reply = `you've used all ${PULL_LIMIT} pulls. Next reset in \`${timeStr}\``;
+      if (message) return message.reply(reply);
+      return interaction.reply({ content: reply, ephemeral: true });
+    }
+
+    // determine rank with pity logic
+    let rank;
+    if (user.pityCount >= PITY_TARGET) {
+      // pity guaranteed
+      const r = Math.random() * 100;
+      let running = 0;
+      for (const [rk, pct] of Object.entries(PITY_DISTRIBUTION)) {
+        running += pct;
+        if (r <= running) {
+          rank = rk;
+          break;
+        }
+      }
+      user.pityCount = 0;
+    } else {
+      const r = Math.random() * 100;
+      let running = 0;
+      for (const [rk, pct] of Object.entries(PULL_RATES)) {
+        running += pct;
+        if (r <= running) {
+          rank = rk;
+          break;
+        }
+      }
+      user.pityCount += 1;
+    }
+
+    const pityProgress = `Guaranteed S+ in ${Math.max(PITY_TARGET - user.pityCount,0)}/${PITY_TARGET}`;
+
+    // select card
+    const pullable = cards.filter(c => c.pullable);
+    let pool = pullable.filter(c => c.rank === rank);
+    if (pool.length === 0) pool = pullable;
+    const card = pool[Math.floor(Math.random() * pool.length)];
+
+    // Get all versions of this character
+    const allVersionIds = getAllCardVersions(card.character);
+    
+    // Find if user owns any version of this character
+    let bestOwnedEntry = null;
+    let bestOwnedId = null;
+    for (const versionId of allVersionIds) {
+      const entry = user.ownedCards.find(e => e.cardId === versionId);
+      if (entry) {
+        bestOwnedEntry = entry;
+        bestOwnedId = versionId;
+      }
+    }
+
+    let duplicateText = '';
+    
+    if (bestOwnedEntry && bestOwnedId) {
+      // User owns some version of this character
+      const bestOwnedCard = getCardById(bestOwnedId);
+      const pulledCard = getCardById(card.id);
+      
+      if (pulledCard.mastery < bestOwnedCard.mastery) {
+        // Pulled a lower version than what they own - add XP to best owned
+        bestOwnedEntry.xp = (bestOwnedEntry.xp || 0) + 100;
+        const gained = Math.floor(bestOwnedEntry.xp / 100);
+        if (gained > 0) {
+          bestOwnedEntry.level = (bestOwnedEntry.level || 1) + gained;
+          bestOwnedEntry.xp = bestOwnedEntry.xp % 100;
+        }
+        duplicateText = `Lower version pulled! +100 XP to ${bestOwnedCard.character} U${bestOwnedCard.mastery}${gained ? ` (+${gained} lvl)` : ''}`;
+      } else if (pulledCard.mastery === bestOwnedCard.mastery) {
+        // Same version - normal duplicate handling
+        bestOwnedEntry.xp = (bestOwnedEntry.xp || 0) + 100;
+        const gained = Math.floor(bestOwnedEntry.xp / 100);
+        if (gained > 0) {
+          bestOwnedEntry.level = (bestOwnedEntry.level || 1) + gained;
+          bestOwnedEntry.xp = bestOwnedEntry.xp % 100;
+        }
+        duplicateText = `Duplicate +100 XP${gained ? ` (+${gained} lvl)` : ''}`;
+      } else {
+        // Pulled a higher version than what they own - add it and remove lower versions
+        user.ownedCards.push({ cardId: card.id, level: 1, xp: 0 });
+        // Remove all lower versions of this character
+        user.ownedCards = user.ownedCards.filter(e => {
+          const eCard = getCardById(e.cardId);
+          if (!eCard || eCard.character !== card.character) return true;
+          return eCard.mastery >= card.mastery;
+        });
+        if (!user.history.includes(card.id)) user.history.push(card.id);
+        duplicateText = `Upgraded! Higher version acquired. Lower versions removed.`;
+      }
+    } else {
+      // Don't own any version - add this one
+      user.ownedCards.push({ cardId: card.id, level: 1, xp: 0 });
+      if (!user.history.includes(card.id)) user.history.push(card.id);
+    }
+
+    user.pullsRemaining -= 1;
+    await user.save();
+
+    const avatarUrl = message ? message.author.displayAvatarURL() : interaction.user.displayAvatarURL();
+    const embed = buildPullEmbed(card, username, avatarUrl, pityProgress, duplicateText);
+    if (message) return message.channel.send({ embeds: [embed] });
+    return interaction.reply({ embeds: [embed] });
+  }
+};

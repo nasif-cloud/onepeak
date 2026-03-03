@@ -1,0 +1,176 @@
+require('dotenv').config();
+const fs = require('fs');
+const path = require('path');
+const mongoose = require('mongoose');
+const { Client, GatewayIntentBits } = require('discord.js');
+const { PREFIX } = require('./config');
+
+const startCmd = require('./commands/start');
+const pullCmd = require('./commands/pull');
+const resetCmd = require('./commands/reset');
+const teamCmd = require('./commands/team');
+const inventoryCmd = require('./commands/inventory');
+const autoTeamCmd = require('./commands/autoteam');
+const User = require('./models/User');
+
+async function main() {
+  if (!process.env.DISCORD_TOKEN && !process.env.TOKEN) return console.error('Please set DISCORD_TOKEN or TOKEN in .env');
+  // support either name in runtime
+  const token = process.env.DISCORD_TOKEN || process.env.TOKEN;
+  if (!process.env.MONGODB_URI) console.warn('MONGODB_URI not set; bot will run without DB');
+
+  // Connect mongoose
+  if (process.env.MONGODB_URI) {
+    await mongoose.connect(process.env.MONGODB_URI).then(() => console.log('Connected to MongoDB')).catch(err => console.error('MongoDB error', err));
+  }
+
+  const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.DirectMessages], partials: [] });
+
+  client.once('ready', () => {
+    console.log(`Logged in as ${client.user.tag}`);
+  });
+
+  // simple lock to prevent rapid button spam causing race conditions
+  const processingInteractions = new Set();
+
+  client.on('interactionCreate', async (interaction) => {
+    try {
+      if (interaction.isButton()) {
+        // guard against multiple button presses while we are handling one
+        if (processingInteractions.has(interaction.user.id)) {
+          return interaction.reply({ content: 'Please wait for the previous action to finish.', ephemeral: true });
+        }
+        processingInteractions.add(interaction.user.id);
+      }
+
+      if (interaction.isChatInputCommand()) {
+        const { commandName } = interaction;
+        if (commandName === 'start') return startCmd.execute({ interaction });
+        if (commandName === 'pull') return pullCmd.execute({ interaction });
+        if (commandName === 'reset') return resetCmd.execute({ interaction });
+        if (commandName === 'autoteam') return autoTeamCmd.execute({ interaction });
+        if (commandName === 'team') return teamCmd.execute({ interaction });
+        if (commandName === 'inventory') return inventoryCmd.execute({ interaction });
+        if (commandName === 'info') return require('./commands/info').execute({ interaction });
+        if (commandName === 'upgrade') return require('./commands/upgrade').execute({ interaction });
+        if (commandName === 'balance') return require('./commands/balance').execute({ interaction });
+        if (commandName === 'isail') return require('./commands/isail').execute({ interaction });
+      }
+
+      if (interaction.isButton()) {
+        const [action, cardId] = interaction.customId.split(':');
+        // existing card pager buttons
+        if (action === 'mastery_prev' || action === 'mastery_next') {
+          const { cards } = require('./data/cards');
+          const cardDef = cards.find(c => c.id === cardId);
+          if (!cardDef) return;
+          const direction = action === 'mastery_prev' ? -1 : 1;
+          const newMastery = cardDef.mastery + direction;
+          const newDef = cards.find(c => c.character === cardDef.character && c.mastery === newMastery);
+          if (!newDef) return;
+
+          // compute user entry if possible
+          let userEntry = null;
+          let userDoc = null;
+          try {
+            const user = await User.findOne({ userId: interaction.user.id });
+            if (user) {
+              userDoc = user;
+              userEntry = user.ownedCards.find(e => e.cardId === newDef.id) || null;
+            }
+          } catch {}
+          const { buildCardEmbed } = require('./utils/cards');
+          const avatarUrl = interaction.user.displayAvatarURL();
+          const embed = buildCardEmbed(newDef, userEntry, avatarUrl, userDoc);
+          // rebuild components
+          const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+          const prevAvailable = newDef.mastery > 1;
+          const nextAvailable = newDef.mastery < newDef.mastery_total;
+          const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+              .setCustomId(`mastery_prev:${newDef.id}`)
+              .setLabel('Previous')
+              .setStyle(prevAvailable ? ButtonStyle.Primary : ButtonStyle.Secondary)
+              .setDisabled(!prevAvailable),
+            new ButtonBuilder()
+              .setCustomId(`mastery_next:${newDef.id}`)
+              .setLabel('Next')
+              .setStyle(nextAvailable ? ButtonStyle.Primary : ButtonStyle.Secondary)
+              .setDisabled(!nextAvailable)
+          );
+          return interaction.update({ embeds: [embed], components: [row] });
+        }
+
+        // handle reset token confirmation
+        if (action === 'reset_confirm') {
+          return resetCmd.handleButton(interaction, cardId);
+        }
+
+        // handle infinite sail interactions
+        if (action && action.startsWith('isail')) {
+          return require('./commands/isail').handleButton(interaction, action, cardId);
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      if (interaction.replied || interaction.deferred) interaction.followUp({ content: 'Error running command', ephemeral: true });
+      else interaction.reply({ content: 'Error processing interaction', ephemeral: true });
+    } finally {
+      // release processing lock if we acquired one
+      if (interaction.isButton()) processingInteractions.delete(interaction.user.id);
+    }
+  });
+
+  client.on('messageCreate', async (message) => {
+    if (message.author.bot) return;
+
+    // Support both prefix `op` and bot mention as prefix
+    const content = message.content || '';
+    const lower = content.toLowerCase();
+
+    // allow: "op pull", "oppull" (not recommended), or mention prefix
+    let invoked = null;
+    let payload = '';
+
+    if (lower.startsWith(PREFIX)) {
+      payload = content.slice(PREFIX.length).trim();
+      invoked = 'prefix';
+    } else if (message.mentions.users.has(client.user?.id)) {
+      // strip mention
+      const mentionRegex = new RegExp(`<@!?(?:${client.user.id})>`);
+      payload = content.replace(mentionRegex, '').trim();
+      invoked = 'mention';
+    } else {
+      return; // not a command for us
+    }
+
+    if (!payload) return; // nothing after prefix
+    const args = payload.split(/ +/g);
+    let cmd = args.shift().toLowerCase();
+    // alias shortcuts
+    if (cmd === 'opp') cmd = 'pull';
+    if (cmd === 'inv') cmd = 'inventory';
+    try {
+      if (cmd === 'start') return await startCmd.execute({ message });
+      if (cmd === 'pull') return await pullCmd.execute({ message });
+      if (cmd === 'reset') return await resetCmd.execute({ message });
+      if (cmd === 'team') return await teamCmd.execute({ message, args });
+      if (cmd === 'autoteam') return await require('./commands/autoteam').execute({ message });
+      if (cmd === 'inventory') return await inventoryCmd.execute({ message });
+      if (cmd === 'info') return await require('./commands/info').execute({ message, args });
+      if (cmd === 'upgrade') return await require('./commands/upgrade').execute({ message, args });
+      if (cmd === 'isail') return await require('./commands/isail').execute({ message });
+      if (cmd === 'bal' || cmd === 'balance') return await require('./commands/balance').execute({ message });
+      if (cmd === 'ownerlist') return await require('./commands/owner').list({ message });
+      if (cmd === 'owner') return await require('./commands/owner').execute({ message, args });
+      return; // unknown command - don't respond
+    } catch (err) {
+      console.error(err);
+      message.reply('Error running command.');
+    }
+  });
+
+  client.login(token);
+}
+
+main();
