@@ -1,4 +1,4 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { searchCards, findBestOwnedCard } = require('../utils/cards');
 const User = require('../models/User');
 
@@ -51,8 +51,16 @@ module.exports = {
       const { applyDefaultEmbedStyle } = require('../utils/embedStyle');
       const discordUser = message ? message.author : interaction.user;
       applyDefaultEmbedStyle(embed, discordUser);
-      if (message) return message.channel.send({ embeds: [embed] });
-      return interaction.reply({ embeds: [embed] });
+      const row = new ActionRowBuilder()
+        .addComponents(
+          new ButtonBuilder()
+            .setCustomId('team_autoteam')
+            .setLabel('Auto team')
+            .setStyle(ButtonStyle.Secondary)
+            .setEmoji('<:autoteam:1489632891188019342>')
+        );
+      if (message) return message.channel.send({ embeds: [embed], components: [row] });
+      return interaction.reply({ embeds: [embed], components: [row] });
     }
 
     if (!query && (sub === 'add' || sub === 'remove')) {
@@ -117,5 +125,60 @@ module.exports = {
 
     if (message) return message.reply(reply);
     return interaction.reply({ content: reply });
+  },
+
+  async handleButton(interaction, rawAction, cardId) {
+    if (rawAction === 'team_autoteam') {
+      // Trigger autoteam logic
+      const userId = interaction.user.id;
+      let user = await User.findOne({ userId });
+      if (!user) {
+        return interaction.reply({ content: 'You don\'t have an account.', ephemeral: true });
+      }
+
+      const { cards } = require('../data/cards');
+      const ownedDefs = (user.ownedCards || [])
+        .map(e => cards.find(c => c.id === e.cardId))
+        .filter(c => c);
+
+      // Exclude boost cards - assuming boost cards have special_attack with 'boost' or low power
+      // For now, sort by power, but perhaps add filter if type === 'boost'
+      let eligibles = ownedDefs.filter(c => !c.special_attack || !c.special_attack.name.toLowerCase().includes('boost'));
+
+      if (eligibles.length === 0) {
+        return interaction.reply({ content: 'You don\'t have any eligible cards to form a team.', ephemeral: true });
+      }
+
+      // Sort by power descending
+      eligibles.sort((a, b) => b.power - a.power);
+
+      const selected = eligibles.slice(0, 3);
+      user.team = selected.map(c => c.id);
+      await user.save();
+
+      // Update the embed
+      const lines = user.team.map(id => {
+        const def = cards.find(c => c.id === id);
+        if (!def) return id;
+        return `${def.emoji || '•'} ${def.character} (${def.rank})`;
+      });
+      const nameList = lines.length ? lines.join('\n') : 'None';
+      const embed = new EmbedBuilder()
+        .setTitle(`${interaction.user.username}'s Team`)
+        .setDescription(nameList);
+      const { applyDefaultEmbedStyle } = require('../utils/embedStyle');
+      applyDefaultEmbedStyle(embed, interaction.user);
+      const row = new ActionRowBuilder()
+        .addComponents(
+          new ButtonBuilder()
+            .setCustomId('team_autoteam')
+            .setLabel('Auto team')
+            .setStyle(ButtonStyle.Secondary)
+            .setEmoji('<:autoteam:1489632891188019342>')
+        );
+
+      await interaction.update({ embeds: [embed], components: [row] });
+      return interaction.followUp({ content: 'Your team has been set to the strongest possible cards!', ephemeral: true });
+    }
   }
 };

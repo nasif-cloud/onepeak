@@ -2,6 +2,8 @@ const User = require('../models/User');
 const { EmbedBuilder } = require('discord.js');
 const { getCurrentStock, getPricing, decrementStock } = require('../src/stock');
 const crews = require('../data/crews');
+const { rods } = require('../data/rods');
+const { applyDefaultEmbedStyle } = require('../utils/embedStyle');
 
 // Simple fuzzy matching function
 function fuzzyMatch(query, candidates) {
@@ -47,6 +49,12 @@ const SHOP_ITEMS = {
   'reset token': { name: 'Reset Token', cost: 250, type: 'item' }
 };
 
+// Add rods to shop items (excluding basic which is not purchaseable)
+const shopRods = {
+  'gold rod': rods.find(r => r.id === 'gold_rod'),
+  'white rod': rods.find(r => r.id === 'white_rod')
+};
+
 module.exports = {
   name: 'buy',
   description: 'Buy an item or pack from the shop',
@@ -77,11 +85,22 @@ module.exports = {
       return interaction.reply({ content: reply, ephemeral: true });
     }
 
-    // Check for shop items first
+    // Check for rods first
+    let rodItem = null;
+    const rodNames = Object.keys(shopRods);
+    const matchedRod = fuzzyMatch(itemQuery, rodNames);
+    if (matchedRod) {
+      rodItem = shopRods[matchedRod];
+    }
+
+    // Check for shop items
     let item = null;
     let itemKey = fuzzyMatch(itemQuery, Object.keys(SHOP_ITEMS));
     if (itemKey) {
       item = SHOP_ITEMS[itemKey];
+    } else if (rodItem) {
+      // Rod is a shop item type
+      item = { name: rodItem.name, cost: rodItem.cost, type: 'rod', rod: rodItem };
     } else {
       // Check for crew packs
       const stock = getCurrentStock();
@@ -99,7 +118,7 @@ module.exports = {
     }
 
     if (!item) {
-      const available = Object.keys(SHOP_ITEMS).concat(getCurrentStock().map(c => c.name));
+      const available = Object.keys(SHOP_ITEMS).concat(rodNames).concat(getCurrentStock().map(c => c.name));
       const reply = `Item "${itemQuery}" not found. Available: ${available.join(', ')}`;
       if (message) return message.reply(reply);
       return interaction.reply({ content: reply, ephemeral: true });
@@ -137,8 +156,29 @@ module.exports = {
       user.gems -= totalCost;
       user.packInventory[item.crew.name] = (user.packInventory[item.crew.name] || 0) + amount;
       user.markModified('packInventory');
+    } else if (item.type === 'rod') {
+      // Rod purchase: Rods cost Beli and replace current rod
+      if (amount !== 1) {
+        const reply = 'You can only purchase 1 rod at a time.';
+        if (message) return message.reply(reply);
+        return interaction.reply({ content: reply, ephemeral: true });
+      }
+      costCurrency = 'Beli';
+      if ((user.balance || 0) < totalCost) {
+        const reply = `You need **${totalCost}** Beli to buy ${item.name}. You only have **${user.balance || 0}** Beli.`;
+        if (message) return message.reply(reply);
+        return interaction.reply({ content: reply, ephemeral: true });
+      }
+      // Check if user is trying to purchase a rod they already have
+      if (user.currentRod === item.rod.id) {
+        const reply = `You already have the **${item.name}**!`;
+        if (message) return message.reply(reply);
+        return interaction.reply({ content: reply, ephemeral: true });
+      }
+      user.balance -= totalCost;
+      user.currentRod = item.rod.id;
     } else {
-      // non-pack items are beli
+      // Other items (like reset token) use beli
       costCurrency = 'Beli';
       if ((user.balance || 0) < totalCost) {
         const reply = `You need **${totalCost}** Beli to buy ${amount}x ${item.name}. You only have **${user.balance || 0}** Beli.`;

@@ -173,7 +173,7 @@ module.exports = {
     }
 
     if (action === 'collection_sort') {
-      return interaction.reply({ content: 'Choose sort/filter option:', components: [makeSortMenu(uid)], ephemeral: true });
+      return interaction.update({ content: 'Choose sort/filter option:', components: [makeSortMenu(uid)] });
     }
 
     if (action === 'collection_sort_select') {

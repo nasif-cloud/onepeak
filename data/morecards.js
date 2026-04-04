@@ -38,4 +38,4 @@ exports.moreCards = [
   // Black Cat Pirates - Note: Black Cat Pirates not in crews.js, use null faculty
   
   
-];
+  ]

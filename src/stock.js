@@ -53,10 +53,9 @@ function saveStock() {
 }
 
 function resetStock() {
-  // Select 5 random different crews
-  const shuffled = [...crews].sort(() => 0.5 - Math.random());
+  // Include all crews with equal chance regardless of rank
   // initialize quantity per crew (random 1-5 packs each)
-  currentStock = shuffled.slice(0, 5).map(c => ({ ...c, quantity: Math.floor(Math.random() * 5) + 1 }));
+  currentStock = crews.map(c => ({ ...c, quantity: Math.floor(Math.random() * 5) + 1 }));
   lastStockReset = Date.now();
   saveStock();
   console.log('Stock reset:', currentStock.map(c => `${c.name} (${c.quantity})`));
@@ -163,9 +162,15 @@ function initStockSystem() {
   if (!hasStockFile) {
     resetStock();
   } else {
-    const timeToStock = getTimeUntilNextStockReset();
-    if (timeToStock <= 0) {
+    // Check if stock has all crews - if not, reset to include all crews
+    if (currentStock.length !== crews.length) {
+      console.log(`Stock has ${currentStock.length} crews but should have ${crews.length}. Resetting stock...`);
       resetStock();
+    } else {
+      const timeToStock = getTimeUntilNextStockReset();
+      if (timeToStock <= 0) {
+        resetStock();
+      }
     }
   }
 
@@ -185,6 +190,7 @@ function initStockSystem() {
     const timeToPull = getTimeUntilNextPullReset();
     if (timeToPull <= 0) {
       resetPullCounter();
+      resetStock(); // Also reset stock when pulls reset
     }
   }, 60 * 1000); // check every minute
 }

@@ -929,7 +929,7 @@ const consolidatedCardData = [
         name: 'Wax Weapons',
         min_atk: 5,
         max_atk: 12,
-        gif: 'https://media1.tenor.com/m/RIcW9zpVekAAAAAC/mr3.gif'
+        gif: 'https://files.catbox.moe/b09ymh.gif'
       },
       effect: 'stun',
       effectDuration: 1,
@@ -948,7 +948,7 @@ const consolidatedCardData = [
         name: 'Wax Weapons',
         min_atk: 7,
         max_atk: 15,
-        gif: 'https://media1.tenor.com/m/RIcW9zpVekAAAAAC/mr3.gif'
+        gif: 'https://files.catbox.moe/b09ymh.gif'
       },
       effect: 'stun',
       effectDuration: 1,
@@ -984,7 +984,7 @@ const consolidatedCardData = [
         name: 'Sables (Sandstorm)',
         min_atk: 7,
         max_atk: 15,
-        gif: 'https://media1.tenor.com/m/p8kha-qt3isAAAAC/crocodile-warlord.gif'
+        gif: 'https://files.catbox.moe/iyrysp.gif'
       },
       image_url: 'https://one-piece-artworks.com/app/view/assets/img/ycjwoCK.png'
     },
@@ -1001,7 +1001,7 @@ const consolidatedCardData = [
         name: 'Sables (Sandstorm)',
         min_atk: 13,
         max_atk: 23,
-        gif: 'https://media1.tenor.com/m/VbmZWE02BkMAAAAd/crocodile-crocodile-one-piece.gif'
+        gif: 'https://files.catbox.moe/qq8pss.gif',
       },
       image_url: 'https://one-piece-artworks.com/app/view/assets/img/N8RUyMn'
     }
@@ -1025,7 +1025,7 @@ const consolidatedCardData = [
       name: 'Black Blade One Flash',
       min_atk: 29,
       max_atk: 40,
-      gif: 'https://media1.tenor.com/m/bma-E_F-nXUAAAAd/mihawk.gif'
+      gif: 'https://files.catbox.moe/1ljlku.gif'
     },
     image_url: 'https://one-piece-artworks.com/app/view/assets/img/KcnD5km',
     secondupgrade: {
@@ -1041,7 +1041,7 @@ const consolidatedCardData = [
         name: 'Black Blade One Flash',
         min_atk: 34,
         max_atk: 44,
-        gif: 'https://media1.tenor.com/m/vf5isZQBOX0AAAAd/jozu-mihawk.gif'
+        gif: 'https://files.catbox.moe/wdhzq2.gif'
       },
       image_url: 'https://one-piece-artworks.com/app/view/assets/img/fiLOArn'
     }
@@ -1076,7 +1076,7 @@ const consolidatedCardData = [
         name: 'Spar Claw',
         min_atk: 5,
         max_atk: 11,
-        gif: 'https://media1.tenor.com/m/FESeJXBo8lsAAAAd/one-piece-anime.gif'
+        gif: 'https://files.catbox.moe/n35b0k.gif'
       },
       image_url: 'https://one-piece-artworks.com/app/view/assets/img/rLv6C7O.png'
     },
@@ -1093,7 +1093,7 @@ const consolidatedCardData = [
         name: 'Spar Claw',
         min_atk: 7,
         max_atk: 13,
-        gif: 'https://media1.tenor.com/m/FESeJXBo8lsAAAAd/one-piece-anime.gif'
+        gif: 'https://files.catbox.moe/n35b0k.gif'
       },
       image_url: 'https://one-piece-artworks.com/app/view/assets/img/Ut0pOgP'
     }
@@ -1120,7 +1120,7 @@ const consolidatedCardData = [
       name: 'Divine Departure',
       min_atk: 20,
       max_atk: 32,
-      gif: 'https://media1.tenor.com/m/m-QOWyoBR-MAAAAd/shanks-one-piece.gif'
+      gif: 'https://files.catbox.moe/23ypxz.gif'
     },
     effect: 'truesight',
     effectDuration: 1,
@@ -1139,7 +1139,7 @@ const consolidatedCardData = [
         name: 'Divine Departure',
         min_atk: 25,
         max_atk: 38,
-        gif: 'https://media1.tenor.com/m/m-QOWyoBR-MAAAAd/shanks-one-piece.gif'
+        gif: 'https://files.catbox.moe/23ypxz.gif'
       },
       effect: 'truesight',
       effectDuration: 2,
@@ -1160,7 +1160,7 @@ const consolidatedCardData = [
         name: 'Divine Departure',
         min_atk: 30,
         max_atk: 42,
-        gif: 'https://media1.tenor.com/m/m-QOWyoBR-MAAAAd/shanks-one-piece.gif'
+        gif: 'https://files.catbox.moe/23ypxz.gif'
       },
       effect: 'truesight',
       effectDuration: 3,
@@ -1198,7 +1198,7 @@ const consolidatedCardData = [
         name: 'Rifle bullets w haki ig',
         min_atk: 12,
         max_atk: 21,
-        gif: 'https://media1.tenor.com/m/0_YHDV0fraEAAAAC/kizaru-ben-beckman.gif'
+        gif: 'https://files.catbox.moe/7r5w8q.gif'
       },
       effect: 'stun',
       effectDuration: 2,
@@ -1443,6 +1443,441 @@ const consolidatedCardData = [
     attack_min: 1,
     attack_max: 2,
     image_url: 'https://one-piece-artworks.com/app/view/assets/img/iI4OVED.png'
+  },
+   // Blackbeard Pirates roster
+  {
+    character: 'Marshall D. Teach',
+    alias: ['marshall d teach', 'blackbeard', 'teach'],
+    upgradeTotal: 3,
+    pullable: true,
+    attribute: 'STR',
+    emoji: '<:marshalldteach:1489679208660865265>',
+    title: 'Seven Warlords of the Sea',
+    faculty: 'Blackbeard Pirates',
+    rank: 'S',
+    power: 24,
+    health: 42,
+    speed: 9,
+    attack_min: 7,
+    attack_max: 10,
+    special_attack: {
+      name: 'Gura Crush',
+      min_atk: 15,
+      max_atk: 21,
+      gif: 'https://files.catbox.moe/gcpyu0.gif'
+    },
+    effect: 'attackdown',
+    effectDuration: 3,
+    effectAmount: 20,
+    image_url: 'https://one-piece-artworks.com/app/view/assets/img/HfoViwB.png',
+    secondupgrade: {
+      title: 'Captain of the Blackbeard Pirates',
+      faculty: 'Blackbeard Pirates',
+      rank: 'SS',
+      power: 36,
+      health: 62,
+      speed: 13,
+      attack_min: 12,
+      attack_max: 15,
+      special_attack: {
+        name: 'Gura Crush',
+        min_atk: 21,
+        max_atk: 26,
+        gif: 'https://files.catbox.moe/gcpyu0.gif'
+      },
+      effect: 'stun',
+      effectDuration: 2,
+      image_url: 'https://one-piece-artworks.com/app/view/assets/img/1ALsLtN.png'
+    },
+    thirdupgrade: {
+      title: 'Emperor of the New World',
+      faculty: 'Blackbeard Pirates',
+      rank: 'UR',
+      power: 52,
+      health: 85,
+      speed: 16,
+      attack_min: 16,
+      attack_max: 20,
+      special_attack: {
+        name: 'Hura Crush',
+        min_atk: 30,
+        max_atk: 42,
+        gif: 'https://files.catbox.moe/gcpyu0.gif'
+      },
+      effect: 'undead',
+      effectDuration: 3,
+      itself: true,
+      image_url: 'https://one-piece-artworks.com/app/view/assets/img/oXKB1a7'
+    }
+  },
+  {
+    character: 'Jesus Burgess',
+    alias: ['jesus burgess', 'burgess', 'champion'],
+    upgradeTotal: 2,
+    pullable: true,
+    attribute: 'STR',
+    emoji: '<:JesusBurgess:1489682966341881946>',
+    title: 'Champion - Helmsman of the Blackbeard Pirates',
+    faculty: 'Blackbeard Pirates',
+    rank: 'A',
+    power: 17,
+    health: 30,
+    speed: 8,
+    attack_min: 5,
+    attack_max: 8,
+    special_attack: {
+      name: 'Hado Elbow',
+      min_atk: 9,
+      max_atk: 14,
+      gif: 'https://files.catbox.moe/lje0e7.gif'
+    },
+    effect: 'defensedown',
+    effectDuration: 3,
+    effectAmount: 15,
+    image_url: 'https://one-piece-artworks.com/app/view/assets/img/i2yJcGi.png',
+    secondupgrade: {
+      title: 'Champion of the Blackbeard Pirates',
+      faculty: 'Blackbeard Pirates',
+      rank: 'S',
+      power: 24,
+      health: 42,
+      speed: 11,
+      attack_min: 8,
+      attack_max: 12,
+      special_attack: {
+        name: 'Overlord Hado Elbow',
+        min_atk: 16,
+        max_atk: 22,
+        gif: 'https://files.catbox.moe/lje0e7.gif'
+      },
+      effect: 'stun',
+      effectDuration: 2,
+      image_url: 'https://one-piece-artworks.com/app/view/assets/img/x27DEWi.png'
+    }
+  },
+  {
+    character: 'Shiryu',
+    alias: ['shiryu', 'shiryu of the rain'],
+    upgradeTotal: 2,
+    pullable: true,
+    attribute: 'STR',
+    emoji: '<:Shiryu:1489684266873917520>',
+    title: 'Shiryu of the Rain - Head Jailer of Impel Down',
+    faculty: 'Impel Down',
+    rank: 'A',
+    power: 18,
+    health: 36,
+    speed: 7,
+    attack_min: 4,
+    attack_max: 8,
+    image_url: 'https://one-piece-artworks.com/app/view/assets/img/m9AVU4i.png',
+    secondupgrade: {
+      title: 'Shiryu of the Rain - Ten Titanic Captain of the Blackbeard Pirates',
+      faculty: 'Blackbeard Pirates',
+      rank: 'S',
+      power: 26,
+      health: 50,
+      speed: 11,
+      attack_min: 8,
+      attack_max: 12,
+      special_attack: {
+        name: 'Kanzen Satsujin',
+        min_atk: 16,
+        max_atk: 22,
+        gif: null
+      },
+      effect: 'freeze',
+      effectDuration: 3,
+      image_url: 'https://one-piece-artworks.com/app/view/assets/img/OC0LqOQ'
+    }
+  },
+  {
+    character: 'Van Augur',
+    alias: ['van augur', 'augur', 'supersonic'],
+    upgradeTotal: 2,
+    pullable: true,
+    attribute: 'INT',
+    emoji: '<:VanAugur:1489685681071587488>',
+    title: 'The Supersonic - Sniper of the Blackbeard Pirates',
+    faculty: 'Blackbeard Pirates',
+    rank: 'A',
+    power: 16,
+    health: 30,
+    speed: 7,
+    attack_min: 4,
+    attack_max: 7,
+    image_url: 'https://one-piece-artworks.com/app/view/assets/img/lmiW4Tm.png',
+    secondupgrade: {
+      title: 'The Supersonic - Sniper of the Blackbeard Pirates',
+      faculty: 'Blackbeard Pirates',
+      rank: 'S',
+      power: 22,
+      health: 44,
+      speed: 12,
+      attack_min: 9,
+      attack_max: 12,
+      special_attack: {
+        name: 'Sonic Shooting',
+        min_atk: 18,
+        max_atk: 26,
+        gif: 'https://files.catbox.moe/olejop.gif'
+      },
+      effect: 'confusion',
+      effectDuration: 3,
+      effectChance: 30,
+      image_url: 'https://one-piece-artworks.com/app/view/assets/img/TkwRsgd'
+    }
+  },
+  {
+    character: 'Avalo Pizarro',
+    alias: ['avalo pizarro', 'pizarro', 'corrupt king'],
+    upgradeTotal: 1,
+    pullable: true,
+    attribute: 'PSY',
+    emoji: '<:avalapizarro:1489686859326951694>',
+    title: 'Corrupt King - Ten Titanic Captain of the Blackbeard Pirates',
+    faculty: 'Blackbeard Pirates',
+    rank: 'S',
+    power: 25,
+    health: 45,
+    speed: 10,
+    attack_min: 8,
+    attack_max: 11,
+    special_attack: {
+      name: 'Corrupt King’s Nightmare',
+      min_atk: 18,
+      max_atk: 24,
+      gif: null
+    },
+    effect: 'attackdown',
+    effectDuration: 3,
+    image_url: 'https://one-piece-artworks.com/app/view/assets/img/vknm4XT'
+  },
+  {
+    character: 'Laffitte',
+    alias: ['laffitte', 'demon sheriff'],
+    upgradeTotal: 1,
+    pullable: true,
+    attribute: 'PSY',
+    emoji: '<:laffitte:1489688177512808479>',
+    title: 'Demon Sheriff - Navigator of the Blackbeard Pirates',
+    faculty: 'Blackbeard Pirates',
+    rank: 'A',
+    power: 17,
+    health: 32,
+    speed: 8,
+    attack_min: 5,
+    attack_max: 7,
+    image_url: 'https://one-piece-artworks.com/app/view/assets/img/0UoiTcT.png'
+  },
+  {
+    character: 'Catarina Devon',
+    alias: ['catarina devon', 'crescent moon hunter'],
+    upgradeTotal: 1,
+    pullable: true,
+    attribute: 'INT',
+    emoji: '<:catarinadevon:1489688805605642341>',
+    title: 'Crescent Moon Hunter - Ten Titanic Captain of the Blackbeard Pirates',
+    faculty: 'Blackbeard Pirates',
+    rank: 'A',
+    power: 18,
+    health: 34,
+    speed: 7,
+    attack_min: 5,
+    attack_max: 8,
+    image_url: 'https://one-piece-artworks.com/app/view/assets/img/ieR0Hog'
+  },
+  {
+    character: 'Sanjuan Wolf',
+    alias: ['sanjuan wolf', 'colossal battleship'],
+    upgradeTotal: 2,
+    pullable: true,
+    attribute: 'INT',
+    emoji: '<:sanjuanwolf:1489690601858400407>',
+    title: 'Colossal Battleship - Prisoner of Impel Down',
+    faculty: 'Impel Down',
+    rank: 'B',
+    power: 13,
+    health: 24,
+    speed: 3,
+    attack_min: 3,
+    attack_max: 5,
+    image_url: 'https://one-piece-artworks.com/app/view/assets/img/NTEPwwr.png',
+    secondupgrade: {
+      title: 'Colossal Battleship - Ten Titanic Captain of the Blackbeard Pirates',
+      faculty: 'Blackbeard Pirates',
+      rank: 'A',
+      power: 18,
+      health: 32,
+      speed: 6,
+      attack_min: 6,
+      attack_max: 8,
+      special_attack: {
+        name: 'Titan Toss',
+        min_atk: 14,
+        max_atk: 19,
+        gif: null
+      },
+      effect: 'defensedown',
+      effectDuration: 3,
+      image_url: 'https://one-piece-artworks.com/app/view/assets/img/3lc6hmV'
+    }
+  },
+  {
+    character: 'Vasco Shot',
+    alias: ['vasco shot', 'heavy drinker'],
+    upgradeTotal: 2,
+    pullable: true,
+    attribute: 'STR',
+    emoji: '<:VaskoShot:1489692824894046288>',
+    title: 'Heavy Drinker - Prisoner of Impel Down',
+    faculty: 'Impel Down',
+    rank: 'B',
+    power: 14,
+    health: 26,
+    speed: 4,
+    attack_min: 4,
+    attack_max: 6,
+    image_url: 'https://one-piece-artworks.com/app/view/assets/img/86H6stv.png',
+    secondupgrade: {
+      title: 'Heavy Drinker - Ten Titanic Captain of the Blackbeard Pirates',
+      faculty: 'Blackbeard Pirates',
+      rank: 'S',
+      power: 24,
+      health: 46,
+      speed: 10,
+      attack_min: 9,
+      attack_max: 13,
+      special_attack: {
+        name: 'Drunken Spitfire',
+        min_atk: 18,
+        max_atk: 26,
+        gif: 'https://files.catbox.moe/7kqhgy.gif'
+      },
+      effect: 'bleed',
+      effectDuration: 3,
+      image_url: 'https://one-piece-artworks.com/app/view/assets/img/pEiz0hC'
+    }
+  },
+  {
+    character: 'Doc Q',
+    alias: ['doc q', 'death god'],
+    upgradeTotal: 2,
+    pullable: true,
+    attribute: 'STR',
+    emoji: '<:DocQ:1489694639404482560>',
+    title: 'Death God - Doctor of the Blackbeard Pirates',
+    faculty: 'Blackbeard Pirates',
+    rank: 'B',
+    power: 12,
+    health: 22,
+    speed: 4,
+    attack_min: 3,
+    attack_max: 5,
+    boost: 'Blackbeard Pirates HP +10%',
+    image_url: 'https://one-piece-artworks.com/app/view/assets/img/9Qb1QFf.png',
+    secondupgrade: {
+      title: 'Death God - Doctor of the Blackbeard Pirates',
+      faculty: 'Blackbeard Pirates',
+      rank: 'A',
+      power: 17,
+      health: 34,
+      speed: 7,
+      attack_min: 5,
+      attack_max: 8,
+      boost: 'Blackbeard Pirates HP +15%',
+      image_url: 'https://one-piece-artworks.com/app/view/assets/img/czoHE4M'
+    }
+  },
+  {
+    character: 'Type A creature',
+    alias: ['type a creature', 'stronger'],
+    upgradeTotal: 1,
+    pullable: true,
+    attribute: 'QCK',
+    emoji: '<:stronger:1489695533110132828>',
+    title: 'Member of the Blackbeard Pirates',
+    faculty: 'Blackbeard Pirates',
+    rank: 'C',
+    power: 8,
+    health: 15,
+    speed: 2,
+    attack_min: 0,
+    attack_max: 0,
+    boost: 'Doc Q ATK +30%',
+    image_url: 'https://static.wikia.nocookie.net/onepiece/images/d/d3/Stronger_Anime_Infobox.png/revision/latest?cb=20231222225633'
+  },
+  {
+    character: 'Kuzan',
+    alias: ['kuzan', 'aokiji', 'marine vice admiral', 'marine admiral'],
+    upgradeTotal: 3,
+    pullable: true,
+    attribute: 'QCK',
+    emoji: '<:Kuzan:1489696440430100561>',
+    title: 'Marine Vice Admiral',
+    faculty: 'Marines',
+    rank: 'S',
+    power: 32,
+    health: 55,
+    speed: 14,
+    attack_min: 7,
+    attack_max: 12,
+    image_url: 'https://one-piece-artworks.com/app/view/assets/img/TK19QHz.png',
+    secondupgrade: {
+      title: 'Marine Admiral',
+      faculty: 'Marines',
+      rank: 'SS',
+      power: 40,
+      health: 70,
+      speed: 16,
+      attack_min: 15,
+      attack_max: 18,
+      special_attack: {
+        name: 'Ice Time Capsule',
+        min_atk: 22,
+        max_atk: 28,
+        gif: 'https://files.catbox.moe/iz8mez.gif'
+      },
+      effect: 'freeze',
+      effectDuration: 3,
+      image_url: 'https://one-piece-artworks.com/app/view/assets/img/egwkFfk'
+    },
+    thirdupgrade: {
+      title: 'Ten Titanic Captain of the Blackbeard Pirates',
+      faculty: 'Blackbeard Pirates',
+      rank: 'SS',
+      power: 55,
+      health: 78,
+      speed: 18,
+      attack_min: 17,
+      attack_max: 21,
+      special_attack: {
+        name: 'Ice Ball',
+        min_atk: 34,
+        max_atk: 45,
+        gif: 'https://media1.tenor.com/m/zmtJXsuVBOQAAAAd/foolishest-thefoolishest.gif'
+      },
+      effect: 'freeze',
+      effectDuration: 3,
+      image_url: 'https://one-piece-artworks.com/app/view/assets/img/pLIO5WQ'
+    }
+  },
+  {
+    character: 'Peachbeard',
+    alias: ['peachbeard'],
+    upgradeTotal: 1,
+    pullable: true,
+    attribute: 'STR',
+    emoji: '<:peachbeard:1489699867977711636>',
+    title: 'Captain of the Peachbeard Pirates',
+    faculty: 'Blackbeard Pirates',
+    rank: 'C',
+    power: 7,
+    health: 14,
+    speed: 2,
+    attack_min: 2,
+    attack_max: 3,
+    image_url: 'https://one-piece-artworks.com/app/view/assets/img/uSGF2aM.png'
   },
 
   ...require('./morecards').moreCards

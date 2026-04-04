@@ -7,6 +7,12 @@ module.exports = {
   async execute({ message, interaction }) {
     const userId = message ? message.author.id : interaction.user.id;
     const channel = message ? message.channel : interaction.channel;
+    const client = message ? message.client : interaction.client;
+
+    // Fetch requester's user info
+    const user = await client.users.fetch(userId);
+    const username = user.username;
+    const avatarUrl = user.displayAvatarURL();
 
     // Fetch all users
     const allUsers = await User.find({});
@@ -27,7 +33,6 @@ module.exports = {
       .slice(0, 10);
 
     // prefetch usernames for the top lists
-    const client = message ? message.client : interaction.client;
     const idsToFetch = new Set();
     wealthRanked.forEach(u => idsToFetch.add(u.userId));
     bountyRanked.forEach(u => idsToFetch.add(u.userId));

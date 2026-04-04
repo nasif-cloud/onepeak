@@ -239,6 +239,9 @@ module.exports = {
     }
 
     // Add new card version to inventory or update existing
+    // First, remove the old card version to prevent duplicates
+    user.ownedCards = user.ownedCards.filter(e => e.cardId !== currentCardId);
+    
     const existingEntry = user.ownedCards.find(e => e.cardId === nextCardId);
     if (existingEntry) {
       existingEntry.level = 1;

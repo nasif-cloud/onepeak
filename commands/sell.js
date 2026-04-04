@@ -1,6 +1,7 @@
 const { EmbedBuilder } = require('discord.js');
 const { findBestOwnedCard, getCardById } = require('../utils/cards');
 const User = require('../models/User');
+const { levelers } = require('../data/levelers');
 
 const SELL_PRICES = {
   D: 10,
@@ -11,6 +12,23 @@ const SELL_PRICES = {
   SS: 750,
   UR: 2500
 };
+
+// Fuzzy search for levelers
+function searchLevelers(query) {
+  if (!query) return [];
+  const q = query.toLowerCase();
+  const matches = levelers.filter(l => {
+    if (l.id.toLowerCase() === q) return true;
+    if (l.name.toLowerCase().includes(q)) return true;
+    return false;
+  });
+  return matches;
+}
+
+function findFirstLeveler(query) {
+  const results = searchLevelers(query);
+  return results.length ? results[0] : null;
+}
 
 module.exports = {
   name: 'sell',
@@ -36,12 +54,44 @@ module.exports = {
     }
 
     const card = await findBestOwnedCard(userId, query);
+    let isLeveler = false;
+    let leveler;
     if (!card) {
-      const reply = `That isn't a card.`;
-      if (message) return message.reply(reply);
-      return interaction.reply({ content: reply, ephemeral: true });
+      leveler = findFirstLeveler(query);
+      if (!leveler) {
+        const reply = `No card or leveler found matching "${query}".`;
+        if (message) return message.reply(reply);
+        return interaction.reply({ content: reply, ephemeral: true });
+      }
+      isLeveler = true;
     }
 
+    if (isLeveler) {
+      // Sell leveler
+      const item = user.items.find(i => i.itemId === leveler.id);
+      if (!item || item.quantity < 1) {
+        const reply = `You don't have ${leveler.name}.`;
+        if (message) return message.reply(reply);
+        return interaction.reply({ content: reply, ephemeral: true });
+      }
+
+      item.quantity -= 1;
+      if (item.quantity <= 0) {
+        user.items = user.items.filter(i => i.itemId !== leveler.id);
+      }
+      user.balance = (user.balance || 0) + leveler.beli;
+      await user.save();
+
+      const embed = new EmbedBuilder()
+        .setColor('#FFFFFF')
+        .setTitle('Item Sold!')
+        .setDescription(`Sold ${leveler.emoji} **${leveler.name}** for **${leveler.beli}** ¥`);
+
+      if (message) return message.channel.send({ embeds: [embed] });
+      return interaction.reply({ embeds: [embed] });
+    }
+
+    // Sell card
     // Check if card is on team
     if (user.team && user.team.includes(card.id)) {
       const reply = `You can't sell **${card.character}** while they're on your team.`;

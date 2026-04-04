@@ -41,8 +41,8 @@ commands.push({ name: 'autoteam', description: 'Automatically set your team to t
 // sell command
 commands.push({
   name: 'sell',
-  description: 'Sell a card for currency based on its rank',
-  options: [{ name: 'query', type: 3, description: 'Card name', required: true }]
+  description: 'Sell a card or leveler for currency',
+  options: [{ name: 'query', type: 3, description: 'Card or item name', required: true }]
 });
 
 // infinite sail battle
@@ -66,6 +66,7 @@ commands.push({
   options: [{ name: 'target', type: 6, description: 'User to view (optional)', required: false }]
 });
 commands.push({ name: 'leaderboard', description: 'View global leaderboards' });
+commands.push({ name: 'daily', description: 'Claim your OP daily rewards' });
 
 // pack system
 commands.push({ name: 'stock', description: 'View current pack stock' });
@@ -78,6 +79,18 @@ commands.push({ name: 'collection', description: 'View your card collection' });
 
 // timers command
 commands.push({ name: 'timers', description: 'View global stock and pull reset timers' });
+
+// fishing and leveling
+commands.push({ name: 'fish', description: 'Go fishing for levelers and cards' });
+commands.push({
+  name: 'feed',
+  description: 'Feed a leveler to a card to level it up',
+  options: [
+    { name: 'leveler', type: 3, description: 'Leveler item name', required: true },
+    { name: 'card', type: 3, description: 'Card name', required: true },
+    { name: 'amount', type: 4, description: 'Amount to feed (default 1)', required: false }
+  ]
+});
 
 const token = process.env.DISCORD_TOKEN || process.env.TOKEN;
 const rest = new REST({ version: '10' }).setToken(token);

@@ -18,6 +18,7 @@ const buyCmd = require('./commands/buy');
 const bountyCmd = require('./commands/bounty');
 const userCmd = require('./commands/user');
 const leaderboardCmd = require('./commands/leaderboard');
+const dailyCmd = require('./commands/daily');
 const stockCmd = require('./commands/stock');
 const openCmd = require('./commands/open');
 const timersCmd = require('./commands/timers');
@@ -44,7 +45,7 @@ async function main() {
 
   const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.DirectMessages], partials: [] });
 
-  client.once('ready', () => {
+  client.once('clientReady', () => {
     console.log(`Logged in as ${client.user.tag}`);
     dropsModule.initializeDrops(client); // Initialize with client reference
   });
@@ -84,6 +85,7 @@ async function main() {
         if (commandName === 'bounty') return bountyCmd.execute({ interaction });
         if (commandName === 'user') return userCmd.execute({ interaction });
         if (commandName === 'leaderboard') return leaderboardCmd.execute({ interaction });
+        if (commandName === 'daily') return dailyCmd.execute({ interaction });
         if (commandName === 'stock') return stockCmd.execute({ interaction });
         if (commandName === 'open') return openCmd.execute({ interaction });
         if (commandName === 'timers') return timersCmd.execute({ interaction });
@@ -91,6 +93,8 @@ async function main() {
         if (commandName === 'upgrade') return require('./commands/upgrade').execute({ interaction });
         if (commandName === 'balance') return require('./commands/balance').execute({ interaction });
         if (commandName === 'isail') return require('./commands/isail').execute({ interaction });
+        if (commandName === 'fish') return require('./commands/fish').execute({ interaction });
+        if (commandName === 'feed') return require('./commands/feed').execute({ interaction });
       }
 
       if (interaction.isButton()) {
@@ -147,6 +151,10 @@ async function main() {
           return require('./commands/isail').handleButton(interaction, action, cardId);
         }
 
+        if (action === 'fish_catch') {
+          return require('./commands/fish').handleCatch(interaction, cardId);
+        }
+
         // handle duel interactions
         if (action && action.startsWith('duel')) {
           return duelCmd.handleButton(interaction, action, cardId);
@@ -186,6 +194,11 @@ async function main() {
         // handle bounty interactions
         if (action === 'bounty') {
           return require('./commands/bounty').handleButton(interaction, cardId);
+        }
+
+        // handle team autoteam
+        if (action === 'team_autoteam') {
+          return require('./commands/team').handleButton(interaction, action, cardId);
         }
       }
     } catch (err) {
@@ -243,6 +256,7 @@ async function main() {
       if (cmd === 'bounty') return await bountyCmd.execute({ message });
       if (cmd === 'user') return await userCmd.execute({ message, args });
       if (cmd === 'leaderboard' || cmd === 'lb') return await leaderboardCmd.execute({ message });
+      if (cmd === 'daily') return await dailyCmd.execute({ message });
       if (cmd === 'stock') return await stockCmd.execute({ message });
       if (cmd === 'open') return await openCmd.execute({ message, args });
       if (cmd === 'timers') return await timersCmd.execute({ message });
@@ -251,6 +265,8 @@ async function main() {
       if (cmd === 'upgrade') return await require('./commands/upgrade').execute({ message, args });
       if (cmd === 'isail') return await require('./commands/isail').execute({ message });
       if (cmd === 'bal' || cmd === 'balance') return await require('./commands/balance').execute({ message });
+      if (cmd === 'fish') return await require('./commands/fish').execute({ message });
+      if (cmd === 'feed') return await require('./commands/feed').execute({ message, args });
       if (cmd === 'ownerlist') return await require('./commands/owner').list({ message });
       if (cmd === 'owner') return await require('./commands/owner').execute({ message, args });
       return; // unknown command - don't respond

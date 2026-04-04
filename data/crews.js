@@ -49,7 +49,7 @@ module.exports = [
   },
   {
     name: "Blackbeard Pirates",
-    icon: 'EMOJI_PLACEHOLDER',
+    icon: '<:blackbeardpirates:1489679789076779319>',
     rank: 'S'
   },
   {

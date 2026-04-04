@@ -243,14 +243,16 @@ function makeSelectionRow(state, isPlayer1Turn) {
         .setDisabled(disabled)
     );
   });
-  // Add forfeit button to character row
-  row.addComponents(
-    new ButtonBuilder()
-      .setCustomId('duel_action:forfeit')
-      .setLabel('Forfeit')
-      .setStyle(ButtonStyle.Danger)
-      .setDisabled(state.finished)
-  );
+  // Add forfeit button to character row only if not awaiting target
+  if (!state.awaitingTarget) {
+    row.addComponents(
+      new ButtonBuilder()
+        .setCustomId('duel_action:forfeit')
+        .setLabel('Forfeit')
+        .setStyle(ButtonStyle.Danger)
+        .setDisabled(state.finished)
+    );
+  }
   return row;
 }
 
@@ -288,14 +290,20 @@ function makeTargetRow(state, isPlayer1Turn) {
   if (!state.awaitingTarget) return null;
   const row = new ActionRowBuilder();
   const targetTeam = isPlayer1Turn ? state.player2Cards : state.player1Cards;
+  const attackerTeam = isPlayer1Turn ? state.player1Cards : state.player2Cards;
+  const attacker = attackerTeam[state.selected];
   // All live cards can be targeted (no tank restriction)
   targetTeam.forEach((c, i) => {
     const disabled = c.currentHP <= 0;
+    const multiplier = getDamageMultiplier(attacker.def.attribute, c.def.attribute);
+    let style = ButtonStyle.Secondary; // Grey for neutral
+    if (multiplier > 1) style = ButtonStyle.Success; // Green for effective
+    else if (multiplier < 1) style = ButtonStyle.Danger; // Red for resisted
     row.addComponents(
       new ButtonBuilder()
         .setCustomId(`duel_target:${i}`)
         .setLabel(`${c.def.character}`)
-        .setStyle(ButtonStyle.Primary)
+        .setStyle(style)
         .setDisabled(disabled)
     );
   });
@@ -706,23 +714,24 @@ module.exports = {
     }
 
     // Send acceptance message
+    const challengerTeamLines = p1Team.map(c => `${c.def.emoji || '•'} ${c.def.character} (${c.def.rank})`).join('\n');
+    const starterUser = disc1.username; // disc1 has higher speed
     const acceptEmbed = new EmbedBuilder()
       .setColor('#FFFFFF')
-      .setTitle('Duel Request')
-      .setDescription(`${disc1.username} has challenged ${disc2.username} to a duel!`)
-      .setAuthor({ name: disc1.username, iconURL: disc1.displayAvatarURL() })
-      .addFields({ name: 'Do you accept?', value: 'Click Accept to begin or Decline to reject.' });
+      .setDescription(`** <a:duelxbounty:1489629169506713600> ${discordUser1.username} challenged you to a duel! **\n\n${discordUser1.username}'s team \n ${challengerTeamLines}\n\n-# ${starterUser} would start this duel first.`);
     
     const acceptRow = new ActionRowBuilder()
       .addComponents(
         new ButtonBuilder()
           .setCustomId('duel_accept:accept')
           .setLabel('Accept')
-          .setStyle(ButtonStyle.Success),
+          .setStyle(ButtonStyle.Secondary)
+          .setEmoji('<:accept:1489632023600697454>'),
         new ButtonBuilder()
           .setCustomId('duel_accept:decline')
           .setLabel('Decline')
-          .setStyle(ButtonStyle.Danger)
+          .setStyle(ButtonStyle.Secondary)
+          .setEmoji('<:decline:1489632232942342154>')
       );
     
     let acceptMsg;
@@ -956,10 +965,8 @@ module.exports = {
             target.status.splice(freezeIdx, 1);
             appendLog(state, `${target.def.character} was unfrozen by the attack!`);
           }
-        }
-
-        const effectiveness = attrMultiplier > 1 ? ' (effective!)' : attrMultiplier < 1 ? ' (weak)' : '';
-        const actionText = `${card.def.character} used Attack on ${target.def.character} for ${dmg} damage${effectiveness}! <:energy:1478051414558118052> -1`;
+        }        const effectiveness = attrMultiplier > 1 ? ' (Effective!)' : attrMultiplier < 1 ? ' (Weak)' : '';
+        const actionText = `${card.def.character} used Attack on ${target.def.character} for ${dmg}${effectiveness} damage! <:energy:1478051414558118052> -1`;
         if (isPlayer1) state.lastP1Action = actionText;
         else state.lastP2Action = actionText;
       } else if (action === 'special') {
@@ -1001,7 +1008,8 @@ module.exports = {
         effectLogsD2.forEach(l => appendLog(state, l));
 
         const effectStr = getEffectString(card, target);
-        const actionText = `${card.def.character} used ${card.def.special_attack?.name || 'Special Attack'} for ${dmg} damage${effectStr}! <:energy:1478051414558118052> -3`;
+        const effectiveness = attrMultiplier > 1 ? ' (Effective!)' : attrMultiplier < 1 ? ' (Weak)' : '';
+        const actionText = `${card.def.character} used ${card.def.special_attack?.name || 'Special Attack'} for ${dmg}${effectiveness} damage${effectStr}! <:energy:1478051414558118052> -3`;
         if (isPlayer1) state.lastP1Action = actionText;
         else state.lastP2Action = actionText;
 
@@ -1282,10 +1290,12 @@ module.exports = {
         if (isPlayer1) state.lastP1Action = actionText;
         else state.lastP2Action = actionText;
       } else if (act === 'rest') {
-        // Rest action: restore card's energy to 3
+        // Rest action: restore card's energy to 3 and heal 10% of max HP
         card.energy = 3;
         card.turnsUntilRecharge = 2;
-        const actionText = `${card.def.character} took a rest and restored energy!`;
+        const healAmount = Math.ceil(card.maxHP * 0.1);
+        card.currentHP = Math.min(card.maxHP, card.currentHP + healAmount);
+        const actionText = `${card.def.character} took a rest, restored energy and healed for ${healAmount} HP!`;
         if (isPlayer1) state.lastP1Action = actionText;
         else state.lastP2Action = actionText;
       }

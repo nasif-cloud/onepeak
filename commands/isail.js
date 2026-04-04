@@ -314,14 +314,16 @@ function makeSelectionRow(state) {
         .setDisabled(disabled)
     );
   });
-  // Add forfeit button to character row
-  row.addComponents(
-    new ButtonBuilder()
-      .setCustomId('isail_action:forfeit')
-      .setLabel('Forfeit')
-      .setStyle(ButtonStyle.Danger)
-      .setDisabled(state.finished)
-  );
+  // Add forfeit button to character row only if not awaiting target
+  if (!state.awaitingTarget) {
+    row.addComponents(
+      new ButtonBuilder()
+        .setCustomId('isail_action:forfeit')
+        .setLabel('Forfeit')
+        .setStyle(ButtonStyle.Danger)
+        .setDisabled(state.finished)
+    );
+  }
   return row;
 }
 

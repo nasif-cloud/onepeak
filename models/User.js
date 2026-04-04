@@ -32,6 +32,13 @@ const UserSchema = new Schema({
   team: { type: [String], default: [] },
   // pack inventory for global stock system
   packInventory: { type: Object, default: {} },
+  // daily rewards
+  lastDaily: { type: Date, default: null },
+  dailyStreak: { type: Number, default: 0 },
+  // fishing
+  lastFishFail: { type: Date, default: null },
+  // rods for fishing
+  currentRod: { type: String, default: 'basic_rod' },
 });
 
 module.exports = mongoose.model('User', UserSchema);
