@@ -25,6 +25,7 @@ async function list({ message }) {
       { name: 'op owner setdrops <#channel>', value: 'Enable card drops in a channel (spawns every 5 min, expires in 10 min)', inline: false },
       { name: 'op owner unsetdrops', value: 'Disable card drops globally', inline: false },
       { name: 'op owner toggleupgrade <on|off>', value: 'Enable/disable upgrade requirements system globally', inline: false },
+      { name: 'op owner time <duration>', value: 'Simulate time passing (e.g., op owner time 8h triggers pull reset)', inline: false },
       { name: 'op ownerlist', value: 'Show this list', inline: false }
     );
   return message.channel.send({ embeds: [embed] });
@@ -171,11 +172,11 @@ async function execute({ message, args }) {
     const dropsModule = require('./drops');
     
     try {
-      dropsModule.startDropTimer(message.client, channelId);
+      await dropsModule.startDropTimer(message.client, channelId);
       return message.reply(`✅ Card drops enabled in <#${channelId}>! Drops will spawn every 5 minutes and expire after 10 minutes.`);
     } catch (err) {
       console.error('Error setting up drops:', err);
-      return message.reply('Failed to set up drops. Make sure the channel exists.');
+      return message.reply('Failed to set up drops. Make sure the bot can access that channel and that it is a text channel.');
     }
   }
 
@@ -187,6 +188,53 @@ async function execute({ message, args }) {
     } catch (err) {
       console.error('Error disabling drops:', err);
       return message.reply('Failed to disable drops.');
+    }
+  }
+
+  if (sub === 'time') {
+    const durationStr = args[1];
+    if (!durationStr) {
+      return message.reply('Usage: op owner time <duration> (e.g., 8h, 30m, 2d)');
+    }
+
+    // Parse duration string (e.g., "8h", "30m", "2d")
+    const match = durationStr.match(/^(\d+)([hdm])$/i);
+    if (!match) {
+      return message.reply('Invalid duration format. Use: <number><h|m|d> (e.g., 8h, 30m, 2d)');
+    }
+
+    const amount = parseInt(match[1], 10);
+    const unit = match[2].toLowerCase();
+
+    let milliseconds = 0;
+    if (unit === 'h') {
+      milliseconds = amount * 60 * 60 * 1000;
+    } else if (unit === 'm') {
+      milliseconds = amount * 60 * 1000;
+    } else if (unit === 'd') {
+      milliseconds = amount * 24 * 60 * 60 * 1000;
+    }
+
+    // Update pull reset time in file to simulate time passing
+    const fs = require('fs');
+    const path = require('path');
+    const PULL_FILE = path.join(__dirname, '..', 'pull.json');
+
+    try {
+      const newTime = Date.now() - milliseconds;
+      fs.writeFileSync(PULL_FILE, JSON.stringify({ lastReset: newTime }, null, 2));
+      
+      // Reset pulls via direct function call
+      const User = require('../models/User');
+      const { PULL_LIMIT } = require('../config');
+      
+      await User.updateMany({}, { pullsRemaining: PULL_LIMIT });
+      console.log('Pulls reset');
+      
+      return message.reply(`⏰ Simulated ${amount}${unit.toUpperCase()} passing. Pulls reset!`);
+    } catch (err) {
+      console.error('Error simulating time:', err);
+      return message.reply('Failed to simulate time passing.');
     }
   }
 

@@ -55,6 +55,12 @@ const shopRods = {
   'white rod': rods.find(r => r.id === 'white_rod')
 };
 
+function getSuggestionEmoji(suggestion) {
+  const lowerSuggestion = suggestion.toLowerCase();
+  const rod = shopRods[lowerSuggestion];
+  return rod?.emoji ? `${rod.emoji} ` : '';
+}
+
 module.exports = {
   name: 'buy',
   description: 'Buy an item or pack from the shop',
@@ -119,7 +125,9 @@ module.exports = {
 
     if (!item) {
       const available = Object.keys(SHOP_ITEMS).concat(rodNames).concat(getCurrentStock().map(c => c.name));
-      const reply = `Item "${itemQuery}" not found. Available: ${available.join(', ')}`;
+      const suggested = fuzzyMatch(itemQuery, available);
+      const suggestionText = suggested ? ` Did you mean **${getSuggestionEmoji(suggested)}${suggested}**?` : '';
+      const reply = `**${itemQuery}**is not a valid item. ${suggestionText}`;
       if (message) return message.reply(reply);
       return interaction.reply({ content: reply, ephemeral: true });
     }
@@ -157,7 +165,7 @@ module.exports = {
       user.packInventory[item.crew.name] = (user.packInventory[item.crew.name] || 0) + amount;
       user.markModified('packInventory');
     } else if (item.type === 'rod') {
-      // Rod purchase: Rods cost Beli and replace current rod
+      // Rod purchase: Rods cost Beli and add to inventory
       if (amount !== 1) {
         const reply = 'You can only purchase 1 rod at a time.';
         if (message) return message.reply(reply);
@@ -169,13 +177,17 @@ module.exports = {
         if (message) return message.reply(reply);
         return interaction.reply({ content: reply, ephemeral: true });
       }
-      // Check if user is trying to purchase a rod they already have
-      if (user.currentRod === item.rod.id) {
+      // Check if user already has this rod
+      const existingRod = user.items.find(it => it.itemId === item.rod.id);
+      if (existingRod) {
         const reply = `You already have the **${item.name}**!`;
         if (message) return message.reply(reply);
         return interaction.reply({ content: reply, ephemeral: true });
       }
       user.balance -= totalCost;
+      // Add rod to items with durability
+      user.items.push({ itemId: item.rod.id, quantity: 1, durability: item.rod.durability });
+      // Set as current rod
       user.currentRod = item.rod.id;
     } else {
       // Other items (like reset token) use beli

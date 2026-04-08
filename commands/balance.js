@@ -34,7 +34,9 @@ module.exports = {
     }
     let user = await User.findOne({ userId: targetId });
     if (!user) {
-      const reply = 'You don\'t have an account. Run `op start` or /start to register.';
+      const reply = targetId !== userId
+        ? 'That user does not have an account.'
+        : 'You don\'t have an account. Run `op start` or /start to register.';
       if (message) return message.channel.send(reply);
       return interaction.reply({ content: reply, ephemeral: true });
     }
@@ -53,15 +55,10 @@ module.exports = {
 
     let msg;
     if (message) {
-      msg = await message.channel.send({ embeds: [embed] });
+      await message.channel.send({ embeds: [embed] });
     } else {
-      msg = await interaction.reply({ embeds: [embed], fetchReply: true });
+      await interaction.reply({ embeds: [embed], fetchReply: true });
     }
-
-    setTimeout(() => {
-      embed.setFooter({ text: 'Expired' });
-      msg.edit({ embeds: [embed], components: [] }).catch(() => {});
-    }, 180000);
   },
 
   async handleButton(interaction, rawAction) {

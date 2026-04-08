@@ -216,20 +216,17 @@ function simulatePull(pityCount, faculty = null, options = {}) {
   if (mastery === 1) pool = pool.filter(c => c.pullable);
 
   if (faculty) {
-    const facultyPool = pool.filter(c => {
-      if (c.faculty === faculty) return true;
-      const allVersionIds = getAllCardVersions(c.character);
-      return allVersionIds.some(versionId => {
-        const versionCard = getCardById(versionId);
-        return versionCard && versionCard.faculty === faculty;
-      });
-    });
+    const facultyPool = pool.filter(c => c.faculty === faculty);
     if (facultyPool.length > 0) {
       pool = facultyPool;
     } else {
+      // If no cards of this rank/mastery for this faculty, fall back to any rank for this faculty
       const alt = cards.filter(c => c.mastery === mastery && c.faculty === faculty);
       if (alt.length > 0) {
         pool = alt;
+      } else {
+        // If still no cards, fall back to any mastery for this faculty
+        pool = cards.filter(c => c.faculty === faculty);
       }
     }
   }
@@ -272,12 +269,12 @@ function buildPullEmbed(card, username, avatarUrl, pityText, duplicateInfo) {
     if (m) iconVal = `https://cdn.discordapp.com/emojis/${m[1]}.png`;
   }
   const author = {};
-  if (iconVal) {
+  if (iconVal && pityText) { // Only set author for regular pulls, not pack opens
     if (iconVal.startsWith && iconVal.startsWith('http')) author.iconURL = iconVal;
     else author.name = iconVal;
   }
   // always include a name field; use faculty if nothing else
-  if (!author.name) author.name = card.faculty;
+  if (!author.name && pityText) author.name = card.faculty;
   
   // Calculate attack value for display
   const attackVal = `${card.attack_min} - ${card.attack_max}`;
@@ -350,8 +347,9 @@ function buildCardEmbed(cardDef, userEntry, avatarUrl, user) {
   }
   if (!author.name) author.name = cardDef.faculty;
 
+  const exactEntry = userEntry;
   const isOwned = !!userEntry;
-  const lvl = isOwned ? userEntry.level : 1;
+  const lvl = exactEntry ? exactEntry.level : 1;
   const cardStats = getCardFinalStats(cardDef, lvl, user);
   const scaled = cardStats.scaled;
   const boostEntries = cardStats.boostEntries || [];
@@ -367,8 +365,8 @@ function buildCardEmbed(cardDef, userEntry, avatarUrl, user) {
     '',
     `**Attribute:** ${attributeIcon}`
   ];
-  if (isOwned) {
-    descLines.push(`**Level:** ${lvl}${userEntry && typeof userEntry.xp === 'number' ? ` (XP: ${userEntry.xp})` : ''}`);
+  if (exactEntry) {
+    descLines.push(`**Level:** ${lvl}${typeof exactEntry.xp === 'number' ? ` (XP: ${exactEntry.xp})` : ''}`);
   }
   descLines.push(`**Owned:** ${isOwned ? 'Yes' : 'No'}`);
   descLines.push(`**Rank:** ${cardDef.rank}`);
@@ -451,7 +449,7 @@ function buildCardEmbed(cardDef, userEntry, avatarUrl, user) {
     if (cardDef.effect && cardDef.effectDuration) {
       const effectDesc = cardDef.effect === 'undead' && cardDef.itself
         ? 'Keeps itself alive at 1 HP until the effect ends'
-        : getEffectDescription(cardDef.effect, cardDef.effectDuration, !!cardDef.itself);
+        : getEffectDescription(cardDef.effect, cardDef.effectDuration, !!cardDef.itself, cardDef.effectAmount, cardDef.effectChance);
       if (effectDesc) {
         let amountLabel = '';
         if (['regen', 'attackup', 'attackdown', 'defenseup', 'defensedown'].includes(cardDef.effect)) {
@@ -468,7 +466,7 @@ function buildCardEmbed(cardDef, userEntry, avatarUrl, user) {
   }
 
   if (cardDef.effect && (!cardDef.special_attack || !scaled.special_attack)) {
-    const effectDescription = getEffectDescription(cardDef.effect, cardDef.effectDuration || 0, !!cardDef.itself);
+    const effectDescription = getEffectDescription(cardDef.effect, cardDef.effectDuration || 0, !!cardDef.itself, cardDef.effectAmount, cardDef.effectChance);
     if (effectDescription) {
       embed.addFields({ name: 'Effect', value: effectDescription, inline: false });
     }
@@ -548,25 +546,37 @@ function calculateFinalStats(cardDef, level, boostPct = 0) {
 }
 
 // expose helper for other modules to describe status effects on attacks
-function getEffectDescription(effectType, duration, isSelf = false) {
+function getEffectDescription(effectType, duration, isSelf = false, effectAmount = null, effectChance = null) {
   const isPermanent = duration === -1;
   const durationText = isPermanent ? '' : `${duration} turn${duration > 1 ? 's' : ''}`;
   const targetLabel = isSelf ? 'own' : `opponent's`;
+  const amount = effectAmount ?? (effectType === 'regen' ? 10 : 12);
+  const chance = effectChance ?? 50;
+  const amountText = ['attackup', 'attackdown', 'defenseup', 'defensedown'].includes(effectType)
+    ? ` ${amount}%`
+    : effectType === 'regen'
+      ? ` (${amount}%)`
+      : effectType === 'confusion'
+        ? ` (${chance}% chance)`
+        : '';
+
   const effectDescriptions = {
-    regen: `Regenerates HP each turn${durationText ? ` for ${durationText}` : ''}`,
-    confusion: `Confuses the opponent${durationText ? ` for ${durationText}` : ''}`,
+    regen: isPermanent
+      ? `Permanently regenerates HP each turn${amountText}`
+      : `Regenerates HP each turn${durationText ? ` for ${durationText}` : ''}${amountText}`,
+    confusion: `Confuses the opponent${durationText ? ` for ${durationText}` : ''}${amountText}`,
     attackup: isPermanent
-      ? `Permanently boosts ${targetLabel} attack by`
-      : `Boosts ${targetLabel} attack${durationText ? ` for ${durationText}` : ''} by`,
+      ? `Permanently boosts ${targetLabel} attack by${amountText}`
+      : `Boosts ${targetLabel} attack${durationText ? ` for ${durationText}` : ''} by${amountText}`,
     attackdown: isPermanent
-      ? `Permanently reduces ${targetLabel} attack by`
-      : `Reduces ${targetLabel} attack${durationText ? ` for ${durationText}` : ''} by`,
+      ? `Permanently reduces ${targetLabel} attack by${amountText}`
+      : `Reduces ${targetLabel} attack${durationText ? ` for ${durationText}` : ''} by${amountText}`,
     defenseup: isPermanent
-      ? `Permanently boosts ${targetLabel} defense by`
-      : `Boosts ${targetLabel} defense${durationText ? ` for ${durationText}` : ''} by`,
+      ? `Permanently boosts ${targetLabel} defense by${amountText}`
+      : `Boosts ${targetLabel} defense${durationText ? ` for ${durationText}` : ''} by${amountText}`,
     defensedown: isPermanent
-      ? `Permanently reduces ${targetLabel} defense by`
-      : `Reduces ${targetLabel} defense${durationText ? ` for ${durationText}` : ''} by`,
+      ? `Permanently reduces ${targetLabel} defense by${amountText}`
+      : `Reduces ${targetLabel} defense${durationText ? ` for ${durationText}` : ''} by${amountText}`,
     truesight: `Can't be attacked${durationText ? ` for ${durationText}` : ''}`,
     undead: `Keeps the target alive at 0 HP until the effect ends`,
     stun: `Stuns the opponent${durationText ? ` for ${durationText}` : ''}`,

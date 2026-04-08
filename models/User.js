@@ -26,7 +26,7 @@ const UserSchema = new Schema({
   totalPulls: { type: Number, default: 0 },
   resetTokens: { type: Number, default: 5 },
   // inventory for future shop/consumables
-  items: { type: [{ itemId: String, quantity: Number }], default: [] },
+  items: { type: [{ itemId: String, quantity: Number, durability: Number }], default: [] },
   packs: { type: [{ packType: String, quantity: Number }], default: [] },
   // active team (up to 3 cardIds)
   team: { type: [String], default: [] },

@@ -43,7 +43,7 @@ const marines = [
   { 
     rank: 'Seaman First Class', 
     hp: 7, 
-    atk: 2, 
+    atk: 3, 
     speed: 2, 
     attribute: 'DEX',
     pool: [
@@ -67,7 +67,7 @@ const marines = [
   { 
     rank: 'Chief Petty Officer', 
     hp: 15, 
-    atk: 3, 
+    atk: 4, 
     speed: 3, 
     attribute: 'STR',
     pool: [
@@ -78,7 +78,7 @@ const marines = [
   { 
     rank: 'Master Chief Petty Officer', 
     hp: 20, 
-    atk: 3, 
+    atk: 4, 
     speed: 3, 
     attribute: 'QCK',
     pool: [
@@ -89,7 +89,7 @@ const marines = [
   { 
     rank: 'Warrant Officer', 
     hp: 25, 
-    atk: 4, 
+    atk: 5, 
     speed: 4, 
     attribute: 'PSY',
     pool: [
@@ -101,7 +101,7 @@ const marines = [
   { 
     rank: 'Ensign', 
     hp: 30, 
-    atk: 4, 
+    atk: 6, 
     speed: 4, 
     attribute: 'QCK',
     pool: [
@@ -115,7 +115,7 @@ const marines = [
   { 
     rank: 'Lieutenant Junior Grade', 
     hp: 35, 
-    atk: 4, 
+    atk: 7, 
     speed: 5, 
     attribute: 'QCK',
     pool: [
@@ -129,7 +129,7 @@ const marines = [
   { 
     rank: 'Lieutenant', 
     hp: 40, 
-    atk: 4, 
+    atk: 8, 
     speed: 5, 
     attribute: 'QCK',
     pool: [
@@ -143,7 +143,7 @@ const marines = [
   { 
     rank: 'Lieutenant Commander', 
     hp: 45, 
-    atk: 4, 
+    atk: 10, 
     speed: 6, 
     attribute: 'INT',
     pool: [
@@ -155,7 +155,7 @@ const marines = [
   { 
     rank: 'Captain', 
     hp: 50, 
-    atk: 5, 
+    atk: 12, 
     speed: 6, 
     attribute: 'PSY',
     pool: [
@@ -164,6 +164,76 @@ const marines = [
       { emoji: '<:INTcaptain2:1490392724669599914>', attribute: 'INT' },
       { emoji: '<:QCKcaptain:1490392956639907941>', attribute: 'QCK' },
       { emoji: '<:Dexcaptain:1490393253487579300>', attribute: 'DEX' }
+    ]
+  },
+  { 
+    rank: 'Commodore', 
+    hp: 55, 
+    atk: 13, 
+    speed: 6, 
+    attribute: 'PSY',
+    pool: [
+      { emoji: '<:INTcommodore:1491525969243279411>', attribute: 'INT' },
+      { emoji: '<:DEXcommodore:1491526702478921761>', attribute: 'DEX' }
+    ]
+  },
+  { 
+    rank: 'Rear admiral', 
+    hp: 60, 
+    atk: 15, 
+    speed: 7, 
+    attribute: 'PSY',
+    pool: [
+      { emoji: '<:QCKrearadmiral:1491527615293689949>', attribute: 'QCK' },
+      { emoji: '<:INTrearadmiral:1491527898119667863>', attribute: 'INT' },
+      { emoji: '<:PSYrearadmiral:1491528314207338626>', attribute: 'PSY' }
+    ]
+  },
+  { 
+    rank: 'Vice admiral', 
+    hp: 70, 
+    atk: 18, 
+    speed: 10, 
+    attribute: 'PSY',
+    pool: [
+      { emoji: '<:DEXviceadmiral:1491532324033134726>', attribute: 'DEX' },
+      { emoji: '<:INT2viceadmiral:1491532051587924129>', attribute: 'INT' },
+      { emoji: '<:INTviceadmiral:1491531375650668624>', attribute: 'INT' },
+      { emoji: '<:QCKviceadmiral:1491532505122214061>', attribute: 'QCK' },
+      { emoji: '<:PSYviceadmiral:1491533004105973880>', attribute: 'PSY' },
+      { emoji: '<:STRviceadmiral:1491533609574858892>', attribute: 'STR' },
+      { emoji: '<:DEX2viceadmiral:1491533376921010226>', attribute: 'DEX' },
+      { emoji: '<:QCK2Viceadmiral:1491534250921693254>', attribute: 'QCK' },
+      { emoji: '<:PSYviceadmiral:1491533004105973880>', attribute: 'PSY' },
+      { emoji: '<:DEX3Viceadmiral:1491534415225032824>', attribute: 'DEX' },
+      { emoji: '<:PSY3viceadmiral:1491534627628646410>', attribute: 'PSY' },
+      { emoji: '<:STR2Viceadmiral:1491534817161117816>>', attribute: 'STR' }
+    ]
+  },
+  { 
+    rank: 'Admiral', 
+    hp: 80, 
+    atk: 20, 
+    speed: 11, 
+    attribute: 'PSY',
+    pool: [
+      { emoji: '<:PSYAdmiral:1491535320720867328>', attribute: 'PSY' },
+      { emoji: '<:INTadmiral:1491535479198187554>', attribute: 'INT' },
+      { emoji: '<:QCKamiral:1491536135967739945>', attribute: 'QCK' },
+      { emoji: '<:INT2admiral:1491536432941240422>', attribute: 'INT' }
+    ]
+  },
+  { 
+    rank: 'Fleet Admiral', 
+    hp: 100, 
+    atk: 25, 
+    speed: 15, 
+    attribute: 'PSY',
+    pool: [
+      { emoji: '<:STRfleetadmiral:1491537014435352657>', attribute: 'STR' },
+      { emoji: '<:PSYfleetadmiral:1491537308036370614>', attribute: 'PSY' },
+      { emoji: '<:QCKamiral:1491536135967739945>', attribute: 'QCK' },
+      { emoji: '<:INT2admiral:1491536432941240422>', attribute: 'INT' }
     ]
   }
 ];

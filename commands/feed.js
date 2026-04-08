@@ -118,7 +118,7 @@ module.exports = {
     }
 
     // Validate attribute compatibility
-    if (leveler.attribute !== 'ALL' && leveler.attribute !== card.attribute) {
+    if (typeof leveler.xp !== 'object' && leveler.attribute !== 'ALL' && leveler.attribute !== card.attribute) {
       const reply = `${leveler.emoji} **${leveler.name}** (${leveler.attribute}) cannot be fed to **${card.character}** (${card.attribute}). Only ${leveler.attribute} cards can use this leveler!`;
       if (message) return message.reply(reply);
       return interaction.reply({ content: reply, flags: 64 });
@@ -126,26 +126,23 @@ module.exports = {
 
     // Calculate XP
     let xpGain = 0;
-    if (leveler.attribute === 'ALL') {
-      // Rainbow
-      if (card.attribute === 'INT') {
-        xpGain = leveler.xp.INT * amount;
-      } else {
-        xpGain = leveler.xp.QCK * amount; // All others same
-      }
+    if (typeof leveler.xp === 'object') {
+      xpGain = (leveler.xp[card.attribute] || 0) * amount;
     } else {
-      xpGain = leveler.xp * amount;
+      xpGain = Number(leveler.xp || 0) * amount;
       if (leveler.attribute === card.attribute) {
         xpGain *= 1.5;
       }
     }
 
     // Add XP
-    ownedCard.xp += xpGain;
-    // Level up logic: cap XP at 0-99 per level
-    const levels = Math.floor(ownedCard.xp / 100);
-    ownedCard.level += levels;
-    ownedCard.xp = ownedCard.xp % 100; // Keep only the remainder
+    const currentXp = Number(ownedCard.xp) || 0;
+    const currentLevel = Number(ownedCard.level) || 1;
+    const normalizedXpGain = Number(xpGain) || 0;
+    const totalXp = currentXp + normalizedXpGain;
+    const levels = Math.floor(totalXp / 100);
+    ownedCard.level = currentLevel + levels;
+    ownedCard.xp = totalXp % 100;
 
     // Remove items
     item.quantity -= amount;

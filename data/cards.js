@@ -857,11 +857,11 @@ const consolidatedCardData = [
         name: 'Honesty Impact',
         min_atk: 16,
         max_atk: 24,
-        gif: 'https://one-piece-artworks.com/app/view/assets/img/rHRC8mf'
+        gif: 'https://files.catbox.moe/8hv6du.gif'
       },
       effect: 'stun',
       effectDuration: 2,
-      image_url: 'https://files.catbox.moe/5z2a8n.jpg'
+      image_url: 'https://one-piece-artworks.com/app/view/assets/img/rHRC8mf'
     }
   },
   {

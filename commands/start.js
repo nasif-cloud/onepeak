@@ -30,7 +30,8 @@ module.exports = {
       history: starter ? [starter.id] : [],
       balance: 500,
       resetTokens: 5,
-      currentRod: 'basic_rod'
+      currentRod: 'basic_rod',
+      items: [{ itemId: 'basic_rod', quantity: 1, durability: basicRod.durability }]
     });
     await user.save();
 

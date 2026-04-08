@@ -89,10 +89,20 @@ function savePullReset() {
   }
 }
 
-function resetPullCounter() {
+async function resetPullCounter() {
   lastPullReset = Date.now();
   savePullReset();
-  console.log('Global pull counter reset');
+  
+  // Also reset all users' pull counts in the database
+  const User = require('../models/User');
+  const { PULL_LIMIT } = require('../config');
+  
+  try {
+    await User.updateMany({}, { pullsRemaining: PULL_LIMIT });
+    console.log('Pulls reset');
+  } catch (err) {
+    console.error('Error resetting user pull counts:', err);
+  }
 }
 
 function getNextStockResetDate() {
@@ -139,14 +149,10 @@ function getCountdownString() {
 function getStockCountdownString() {
   const ms = getTimeUntilNextStockReset();
   const totalSeconds = Math.ceil(ms / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
-  let out = '';
-  if (minutes > 0) out += `${minutes} min`;
-  if (minutes > 0 && seconds > 0) out += ' ';
-  if (seconds > 0) out += `${seconds} sec`;
-  if (!out) out = '0 sec';
-  return out;
+  return `${hours}h ${minutes}m ${seconds}s`;
 }
 
 function ensureStockUpToDate() {
@@ -192,11 +198,12 @@ function initStockSystem() {
   // Check if we need to reset pull counter based on time
   const timeToPull = getTimeUntilNextPullReset();
   if (timeToPull <= 0) {
+    console.log('Global pull reset was due while offline; resetting now.');
     resetPullCounter();
   }
 
-  // Set interval to check every minute for resets
-  setInterval(() => {
+  // Set interval to check every 5 seconds for resets
+  setInterval(async () => {
     const timeToStock = getTimeUntilNextStockReset();
     if (timeToStock <= 0) {
       resetStock();
@@ -204,7 +211,7 @@ function initStockSystem() {
 
     const timeToPull = getTimeUntilNextPullReset();
     if (timeToPull <= 0) {
-      resetPullCounter();
+      await resetPullCounter();
       resetStock(); // Also reset stock when pulls reset
     }
   }, 5000); // check every 5 seconds

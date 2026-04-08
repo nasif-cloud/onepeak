@@ -1059,7 +1059,7 @@ module.exports = {
           try {
             let desc = `${card.def.character} uses ${card.def.special_attack.name || 'Special Attack'}!`;
             if (card.def.effect && card.def.effectDuration) {
-              const effectDesc = getEffectDescription(card.def.effect, card.def.effectDuration, !!card.def.itself);
+              const effectDesc = getEffectDescription(card.def.effect, card.def.effectDuration, !!card.def.itself, card.def.effectAmount, card.def.effectChance);
               if (effectDesc) desc += `\n*${effectDesc}*`;
             }
             const gifEmbed = new EmbedBuilder()
@@ -1293,7 +1293,7 @@ module.exports = {
             try {
               let desc = `${card.def.character} uses ${card.def.special_attack.name || 'Special Attack'}!`;
               if (card.def.effect && card.def.effectDuration) {
-                const effectDesc = getEffectDescription(card.def.effect, card.def.effectDuration, !!card.def.itself);
+                const effectDesc = getEffectDescription(card.def.effect, card.def.effectDuration, !!card.def.itself, card.def.effectAmount, card.def.effectChance);
                 if (effectDesc) desc += `\n*${effectDesc}*`;
               } else if (effectSummary) {
                 // fallback to previous short summary if no duration available

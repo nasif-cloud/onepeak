@@ -47,9 +47,9 @@ async function main() {
 
   const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.DirectMessages], partials: [] });
 
-  client.once('clientReady', () => {
+  client.once('ready', async () => {
     console.log(`Logged in as ${client.user.tag}`);
-    dropsModule.initializeDrops(client); // Initialize with client reference
+    await dropsModule.initializeDrops(client); // Initialize with client reference and restore any saved drop channel
   });
 
   // simple lock to prevent rapid button spam causing race conditions

@@ -2,6 +2,7 @@ const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('
 const User = require('../models/User');
 const { levelers } = require('../data/levelers');
 const { rods } = require('../data/rods');
+const crews = require('../data/crews');
 
 const ITEMS_PER_PAGE = 25;
 
@@ -14,16 +15,56 @@ function parseTargetIdFromArgs(args) {
   return null;
 }
 
+function splitFieldValue(value, maxLength = 1024) {
+  if (typeof value !== 'string') return [''];
+  if (value.length <= maxLength) return [value];
+  const lines = value.split('\n');
+  const chunks = [];
+  let current = '';
+  for (const line of lines) {
+    if (current.length + line.length + (current ? 1 : 0) <= maxLength) {
+      current += (current ? '\n' : '') + line;
+      continue;
+    }
+    if (current) {
+      chunks.push(current);
+      current = '';
+    }
+    if (line.length > maxLength) {
+      chunks.push(line.slice(0, maxLength - 3) + '...');
+    } else {
+      current = line;
+    }
+  }
+  if (current) chunks.push(current);
+  return chunks;
+}
+
 function buildInventoryEmbed(user, username, avatarUrl, pageIndex = 0) {
   // Get current rod for items display
   const currentRod = rods.find(r => r.id === user.currentRod);
-  const rodDisplay = currentRod ? `${currentRod.emoji} ${currentRod.name}` : '❓ Unknown Rod';
+  const rodItem = user.items?.find(it => it.itemId === user.currentRod);
+  let rodDisplay = '❓ Unknown Rod';
+  if (currentRod) {
+    rodDisplay = `${currentRod.emoji} ${currentRod.name}`;
+    if (rodItem && rodItem.durability !== undefined) {
+      rodDisplay += ` (${rodItem.durability}/${currentRod.durability})`;
+    }
+  }
   
   // Build items list with rod at top
-  let itemsList = currentRod ? `${currentRod.emoji} ${currentRod.name}` : '';
+  let itemsList = rodDisplay;
   const levelerItems = (user.items || []).map(i => {
     const leveler = levelers.find(l => l.id === i.itemId);
-    return leveler ? `${leveler.emoji} ${leveler.name} x${i.quantity}` : `${i.itemId} x${i.quantity}`;
+    if (leveler) {
+      let display = `${leveler.emoji} ${leveler.name} x${i.quantity}`;
+      if (i.durability !== undefined) {
+        display += ` (${i.durability})`; // For future durability on other items
+      }
+      return display;
+    } else {
+      return `${i.itemId} x${i.quantity}`;
+    }
   });
   
   // Combine all items (rod + levelers)
@@ -41,17 +82,28 @@ function buildInventoryEmbed(user, username, avatarUrl, pageIndex = 0) {
   // Packs display
   const packsObj = user.packInventory || {};
   const packs = Object.keys(packsObj).length
-    ? Object.entries(packsObj).map(([name, qty]) => `${name} x${qty}`).join('\n')
+    ? Object.entries(packsObj).map(([name, qty]) => {
+        const crew = crews.find(c => c.name === name);
+        const emoji = crew && crew.packEmoji ? crew.packEmoji + ' ' : '';
+        return `${emoji}${name} x${qty}`;
+      }).join('\n')
     : 'None';
 
+  const itemChunks = splitFieldValue(pageItems);
+  const packChunks = splitFieldValue(packs);
   const embed = new EmbedBuilder()
     .setColor('#FFFFFF')
     .setTitle(`${username}'s Inventory`)
-    .setThumbnail(avatarUrl)
-    .addFields(
-      { name: 'Items', value: pageItems, inline: false },
-      { name: 'Packs', value: packs, inline: false }
-    );
+    .setThumbnail(avatarUrl);
+
+  const fields = [];
+  itemChunks.forEach((chunk, index) => {
+    fields.push({ name: index === 0 ? 'Items' : 'Items cont.', value: chunk, inline: false });
+  });
+  packChunks.forEach((chunk, index) => {
+    fields.push({ name: index === 0 ? 'Packs' : 'Packs cont.', value: chunk, inline: false });
+  });
+  embed.addFields(fields);
   
   if (totalPages > 1) {
     embed.setFooter({ text: `Page ${clampedPage + 1}/${totalPages}` });
@@ -144,8 +196,8 @@ module.exports = {
     if (direction === 'prev') newPage = Math.max(0, currentPage - 1);
     if (direction === 'next') newPage = Math.min(totalPages - 1, currentPage + 1);
 
-    const targetUser = await interaction.client.users.fetch(userId).catch(() => null);
-    const username = targetUser ? targetUser.username : userId;
+    const targetUser = await interaction.client.users.fetch(targetId).catch(() => null);
+    const username = targetUser ? targetUser.username : targetId;
     const avatarUrl = targetUser ? targetUser.displayAvatarURL() : interaction.user.displayAvatarURL();
     const { embed } = buildInventoryEmbed(user, username, avatarUrl, newPage);
     

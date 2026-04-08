@@ -7,10 +7,10 @@ const { rods } = require('../data/rods');
 const { levelers } = require('../data/levelers');
 const crews = require('../data/crews');
 
-function makeInfoRow(index, total, cardDef) {
+function makeInfoRow(index, total, cardDef, isOwned) {
   const prevDisabled = index <= 0;
   const nextDisabled = index >= total - 1;
-  return new ActionRowBuilder().addComponents(
+  const components = [
     new ButtonBuilder()
       .setCustomId(`info_prev:${index}`)
       .setLabel('Previous')
@@ -22,13 +22,21 @@ function makeInfoRow(index, total, cardDef) {
       .setLabel('Next')
       .setEmoji({ id: '1489374606916714706' })
       .setStyle(nextDisabled ? ButtonStyle.Secondary : ButtonStyle.Primary)
-      .setDisabled(nextDisabled),
-    new ButtonBuilder()
-      .setCustomId(`info_boost:boost`)
-      .setLabel('Boosts')
-      .setEmoji('<:boosticon:1490506833344073768>')
-      .setStyle(ButtonStyle.Secondary)
-  );
+      .setDisabled(nextDisabled)
+  ];
+  
+  // Only add boost button if card is owned
+  if (isOwned) {
+    components.push(
+      new ButtonBuilder()
+        .setCustomId(`info_boost:boost`)
+        .setLabel('Boosts')
+        .setEmoji('<:boosticon:1490506833344073768>')
+        .setStyle(ButtonStyle.Secondary)
+    );
+  }
+  
+  return new ActionRowBuilder().addComponents(...components);
 }
 
 function buildBoostEmbed(cardDef, userEntry, user) {
@@ -92,7 +100,8 @@ async function renderInfoCard(interaction, session, user, index) {
   const userEntry = user?.ownedCards?.find(e => e.cardId === cardDef.id) || null;
   const avatarUrl = interaction.user.displayAvatarURL();
   const embed = buildCardEmbed(cardDef, userEntry, avatarUrl, user);
-  const row = makeInfoRow(index, session.cards.length, cardDef);
+  const isOwned = userEntry !== null;
+  const row = makeInfoRow(index, session.cards.length, cardDef, isOwned);
   session.currentIndex = index;
   return interaction.update({ embeds: [embed], components: [row] });
 }
@@ -130,10 +139,46 @@ function getLevelerByName(query) {
   return levelers.find(l => l.name.toLowerCase() === q || l.id.toLowerCase() === q) || null;
 }
 
-function buildRodEmbed(rodDef, discordUser) {
+function getRodColor(rodId) {
+  switch (rodId) {
+    case 'basic_rod': return '#8B4513'; // brown
+    case 'gold_rod': return '#FFD700'; // golden
+    case 'white_rod': return '#F8F8FF'; // shiny white
+    default: return '#FFFFFF';
+  }
+}
+
+function buildDurabilityBar(current, max) {
+  if (max <= 0) return '';
+  if (current <= 0) {
+    return '<:Healthemptyleft:1481750325151928391>' +
+           '<:Healthemptymiddle:1481750341489004596>'.repeat(6) +
+           '<:healthemptyright:1481750363286667334>';
+  }
+  
+  const healthPercent = Math.max(0, Math.min(1, current / max));
+  const totalSections = 8;
+  const filledSections = Math.floor(healthPercent * totalSections);
+  const emptySections = totalSections - filledSections;
+  
+  const icons = [
+    emptySections > 0 ? '<:Healthemptyleft:1481750325151928391>' : '<:durabilltyleftfull:1491513785570033734>',
+    emptySections > 1 ? '<:Healthemptymiddle:1481750341489004596>' : '<:durabilitymiddlefulll:1491513816654155838>',
+    emptySections > 2 ? '<:Healthemptymiddle:1481750341489004596>' : '<:durabilitymiddlefulll:1491513816654155838>',
+    emptySections > 3 ? '<:Healthemptymiddle:1481750341489004596>' : '<:durabilitymiddlefulll:1491513816654155838>',
+    emptySections > 4 ? '<:Healthemptymiddle:1481750341489004596>' : '<:durabilitymiddlefulll:1491513816654155838>',
+    emptySections > 5 ? '<:Healthemptymiddle:1481750341489004596>' : '<:durabilitymiddlefulll:1491513816654155838>',
+    emptySections > 6 ? '<:Healthemptymiddle:1481750341489004596>' : '<:durabilitymiddlefulll:1491513816654155838>',
+    emptySections > 7 ? '<:healthemptyright:1481750363286667334>' : '<:durabilityrightfull:1491513801089093923>'
+  ];
+  
+  return icons.join('');
+}
+
+function buildRodEmbed(rodDef, discordUser, user) {
   const embed = new EmbedBuilder()
     .setTitle(rodDef.name)
-    .setColor('#fdfeff')
+    .setColor(getRodColor(rodDef.id))
     .setThumbnail(parseEmojiUrl(rodDef.emoji))
     .setDescription(`${rodDef.emoji}`)
     .addFields(
@@ -141,18 +186,32 @@ function buildRodEmbed(rodDef, discordUser) {
       { name: 'Fishing speed', value: `\`${rodDef.multiplier}x\` faster nibble wait`, inline: true },
       { name: 'Rarity bonus', value: `\`${rodDef.multiplier}x\` reward and rarity scaling`, inline: false },
       { name: 'Luck bonus', value: `\`${Math.round((rodDef.luckBonus || 0) * 100)}%\``, inline: true },
+      { name: 'Durability', value: `${rodDef.durability} uses`, inline: true },
       { name: 'Cost', value: `${rodDef.cost.toLocaleString()} <:beri:1490738445319016651>`, inline: true }
     );
+  
+  // Add durability bar if user owns this rod
+  if (user) {
+    const rodItem = user.items?.find(it => it.itemId === rodDef.id);
+    if (rodItem && rodItem.durability !== undefined) {
+      const durabilityBar = buildDurabilityBar(rodItem.durability, rodDef.durability);
+      embed.addFields({ name: 'Durability Bar', value: `${durabilityBar}`, inline: false });
+    }
+  }
+  
   if (discordUser) embed.setAuthor({ name: discordUser.username, iconURL: discordUser.displayAvatarURL() });
   return embed;
 }
 
-function buildLevelerEmbed(levelerDef, discordUser) {
+function buildLevelerEmbed(levelerDef, discordUser, user) {
   const xpValue = typeof levelerDef.xp === 'object'
     ? Object.entries(levelerDef.xp).map(([attr, value]) => `**${attr}**: ${value}`).join('\n')
     : `\`${levelerDef.xp}\``;
+  const ownedCount = user && Array.isArray(user.items)
+    ? user.items.reduce((sum, item) => item.itemId === levelerDef.id ? sum + (item.quantity || 0) : sum, 0)
+    : 0;
   const descLines = [
-    `**Owned:** no`,
+    `**Owned:** ${ownedCount}x`,
     `**Rank:** ${levelerDef.rank}`,
     `**Attribute:** ${getAttributeEmoji(levelerDef.attribute)}`,
     `**Sell price:** <:beri:1490738445319016651> ${levelerDef.beli}`
@@ -260,14 +319,16 @@ module.exports = {
     // Then check exact rod and leveler names only
     const rodDef = getRodByName(query);
     if (rodDef) {
-      const rodEmbed = buildRodEmbed(rodDef, discordUser);
+      const user = await User.findOne({ userId });
+      const rodEmbed = buildRodEmbed(rodDef, discordUser, user);
       if (message) return message.channel.send({ embeds: [rodEmbed] });
       return interaction.reply({ embeds: [rodEmbed] });
     }
 
     const levelerDef = getLevelerByName(query);
     if (levelerDef) {
-      const levelerEmbed = buildLevelerEmbed(levelerDef, discordUser);
+      const user = await User.findOne({ userId });
+      const levelerEmbed = buildLevelerEmbed(levelerDef, discordUser, user);
       if (message) return message.channel.send({ embeds: [levelerEmbed] });
       return interaction.reply({ embeds: [levelerEmbed] });
     }
@@ -275,7 +336,7 @@ module.exports = {
     // Otherwise, fall back to card lookup
     const cardDef = await findBestOwnedCard(userId, query);
     if (!cardDef) {
-      const reply = `No card or pack found matching **${query}**.`;
+      const reply = `No card found matching **${query}**.`;
       if (message) return message.channel.send(reply);
       return interaction.reply({ content: reply, ephemeral: true });
     }
@@ -293,7 +354,8 @@ module.exports = {
 
     const avatarUrl = message ? message.author.displayAvatarURL() : interaction.user.displayAvatarURL();
     const embed = buildCardEmbed(cardDef, userEntry, avatarUrl, user);
-    const row = makeInfoRow(session.currentIndex, session.cards.length, cardDef);
+    const isOwned = userEntry !== null;
+    const row = makeInfoRow(session.currentIndex, session.cards.length, cardDef, isOwned);
 
     if (message) return message.channel.send({ embeds: [embed], components: [row] });
     return interaction.reply({ embeds: [embed], components: [row] });

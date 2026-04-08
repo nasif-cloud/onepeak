@@ -216,7 +216,115 @@ const levelers = [
     rank: 'S',
     xp: 150,
     beli: 350
-  }
+  },
+  {
+    id: 'purple_armoured_crab',
+    name: 'Purple Armoured Crab',
+    emoji: '<:INTarmouredcrab:1491493080334073937>',
+    attribute: 'INT',
+    rank: 'B',
+    xp: 50,
+    beli: 50
+  },
+  {
+    id: 'blue_armoured_crab',
+    name: 'Blue Armoured Crab',
+    emoji: '<:qckarmouredcrab:1491493778161274890>',
+    attribute: 'QCK',
+    rank: 'B',
+    xp: 50,
+    beli: 50
+  },
+  {
+    id: 'green_armoured_crab',
+    name: 'Green Armoured Crab',
+    emoji: '<:DEXarmouredcrab:1491494144877789385>',
+    attribute: 'DEX',
+    rank: 'B',
+    xp: 50,
+    beli: 50
+  },
+    {
+    id: 'red_armoured_crab',
+    name: 'Red Armoured Crab',
+    emoji: '<:STRarmouredcrab:1491494516098597035>',
+    attribute: 'STR',
+    rank: 'B',
+    xp: 50,
+    beli: 50
+  },
+    {
+    id: 'yellow_armoured_crab',
+    name: 'Yellow Armoured Crab',
+    emoji: '<:PSYarmouredcrab:1491494749591572633>',
+    attribute: 'PSY',
+    rank: 'B',
+    xp: 50,
+    beli: 50
+  },
+  {
+    id: 'rainbow_armoured_crab',
+    name: 'Rainbow Armoured Crab',
+    emoji: '<:rainbowarmouredcrab:1491498423134978228>',
+    attribute: 'INT',
+    rank: 'A',
+    xp: { INT: 130, QCK: 50, DEX: 50, STR: 50, PSY: 50 },
+    beli: 130
+  },
+  {
+    id: 'purple_pirate_penguin',
+    name: 'Purple Pirate Penguin',
+    emoji: '<:intpiratepenguin:1491499076716331200>',
+    attribute: 'INT',
+    rank: 'C',
+    xp: 30,
+    beli: 30
+  },
+  {
+    id: 'blue_pirate_penguin',
+    name: 'Blue Pirate Penguin',
+    emoji: '<:QCKpiratepenguin:1491499389691232421>',
+    attribute: 'QCK',
+    rank: 'C',
+    xp: 30,
+    beli: 30
+  },
+  {
+   id: 'green_pirate_penguin',
+   name: 'Green Pirate Penguin',
+   emoji: '<:dexpiratepenguin:1491499824439361536>',
+   attribute: 'DEX',
+   rank: 'C',
+   xp: 30,
+   beli: 30
+  },
+  {
+   id: 'red_pirate_penguin',
+   name: 'Red Pirate Penguin',
+   emoji: '<:STRpiratepenguin:1491500028294992032>',
+   attribute: 'STR',
+   rank: 'C',
+   xp: 30,
+   beli: 30
+  },
+  {
+   id: 'yellow_pirate_penguin',
+   name: 'Yellow Pirate Penguin',
+   emoji: '<:PSYpiratepenguin:1491500239457353838>',
+   attribute: 'PSY',
+   rank: 'C',
+   xp: 30,
+   beli: 30
+  },
+  {
+   id: 'rainbow_pirate_penguin',
+   name: 'Rainbow Pirate Penguin',
+   emoji: '<:rainbowpiratepenguin:1491501016418357288>',
+   attribute: 'PSY',
+   rank: 'A',
+   xp: { INT: 80, QCK: 30, DEX: 30, STR: 30, PSY: 30 },
+   beli: 80
+  },
 ];
 
 module.exports = { levelers };

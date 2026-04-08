@@ -6,7 +6,8 @@ const rods = [
     cost: 0, // free starter
     luckBonus: 0,
     multiplier: 1,
-    thumbnail: 'https://files.catbox.moe/ck8x40.webp'
+    thumbnail: 'https://files.catbox.moe/ck8x40.webp',
+    durability: 50
   },
   {
     id: 'gold_rod',
@@ -15,7 +16,8 @@ const rods = [
     cost: 3000,
     luckBonus: 0.15, // +15%
     multiplier: 1.25,
-    thumbnail: 'https://files.catbox.moe/4glijm.webp'
+    thumbnail: 'https://files.catbox.moe/4glijm.webp',
+    durability: 250
   },
   {
     id: 'white_rod',
@@ -24,7 +26,8 @@ const rods = [
     cost: 10000,
     luckBonus: 0.30, // +30%
     multiplier: 1.5,
-    thumbnail: 'https://files.catbox.moe/d5qvci.webp'
+    thumbnail: 'https://files.catbox.moe/d5qvci.webp',
+    durability: 300
   }
 ];
 

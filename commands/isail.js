@@ -274,9 +274,9 @@ function buildEmbed(state, user, discordUser) {
   // color remains fixed based on who started (user = white, marine = black)
   const embedColor = state.startingPlayer === 'user' ? '#FFFFFF' : '#000000';
   const embed = new EmbedBuilder()
-    .setColor('#FFFFFF')
-    .setTitle('Adventure: Infinite Sailing')
-    .setDescription(`-- Progress: Level ${user.isailProgress}`);
+    .setColor('#b0d4ff')
+    .setDescription(`**Infinite sailing stage \`${user.isailProgress}\`**`)
+    .setThumbnail('https://static.wikia.nocookie.net/onepiece/images/d/dc/Marines_Infobox.png/revision/latest/scale-to-width-down/1000?cb=20210110121711')
   // set any image override (special attack gif) or default art
   if (state.embedImage) {
     embed.setImage(state.embedImage);
@@ -626,7 +626,12 @@ async function handleVictory(state, msg, user, discordUser) {
     'Lieutenant Junior Grade': 100000,
     'Lieutenant': 250000,
     'Lieutenant Commander': 300000,
-    'Captain': 400000
+    'Captain': 400000,
+    'Commodore': 500000,
+    'Rear admiral': 600000,
+    'Vice admiral': 700000,
+    'Admiral': 800000,
+    'Fleet Admiral': 1000000
   };
   
   // calculate rewards
@@ -689,9 +694,9 @@ async function handleVictory(state, msg, user, discordUser) {
   await user.save();
   // Create a simple victory embed
   const victoryEmbed = new EmbedBuilder()
-    .setColor('#FFFFFF')
+    .setColor('#f8fec6')
     .setTitle('Victory!')
-    .setDescription(`• Earned ${belis} ¥\n• gained ${bountyGain} Bounty\n• All team members gained ${xpGain}xp`);
+    .setDescription(`• Earned ${belis} <:beri:1490738445319016651>\n• Earned ${bountyGain} <:bounty:1490738541448400976>\n• team members gained **${xpGain} XP**`);
   if (discordUser) {
     victoryEmbed.setAuthor({ name: discordUser.username, iconURL: discordUser.displayAvatarURL() });
   }
@@ -715,7 +720,7 @@ async function handleDefeat(state, msg, user, discordUser) {
   await user.save();
   
   const defeatEmbed = new EmbedBuilder()
-    .setColor('#FFFFFF')
+    .setColor('#ffbaba')
     .setTitle('Defeat')
     .setDescription('Better luck next time.');
   if (discordUser) {
@@ -797,7 +802,7 @@ module.exports = {
     }
     
     if (activeIsail) {
-      const reply = 'You already have an active Isail in progress. Finish it first (win, forfeit, or timeout).';
+      const reply = 'You already have an active Isail in progress!';
       if (message) return message.reply(reply);
       return interaction.reply({ content: reply, ephemeral: true });
     }
@@ -1095,7 +1100,7 @@ module.exports = {
           try {
             let desc = `${card.def.character} uses ${card.def.special_attack.name || 'Special Attack'}!`;
             if (card.def.effect && card.def.effectDuration) {
-              const effectDesc = getEffectDescription(card.def.effect, card.def.effectDuration, !!card.def.itself);
+              const effectDesc = getEffectDescription(card.def.effect, card.def.effectDuration, !!card.def.itself, card.def.effectAmount, card.def.effectChance);
               if (effectDesc) desc += `\n*${effectDesc}*`;
             }
             const gifEmbed = new EmbedBuilder()
@@ -1251,7 +1256,7 @@ module.exports = {
           try {
             let desc = `${card.def.character} uses ${card.def.special_attack.name || 'Special Attack'}!`;
             if (card.def.effect && card.def.effectDuration) {
-              const effectDesc = getEffectDescription(card.def.effect, card.def.effectDuration, !!card.def.itself);
+              const effectDesc = getEffectDescription(card.def.effect, card.def.effectDuration, !!card.def.itself, card.def.effectAmount, card.def.effectChance);
               if (effectDesc) desc += `\n*${effectDesc}*`;
             }
             const gifEmbed = new EmbedBuilder()

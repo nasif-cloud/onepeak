@@ -14,7 +14,10 @@ const DEFAULT_EMBED_IMAGE = 'https://files.catbox.moe/n292ji.png';
 function applyDefaultEmbedStyle(embed, user) {
   if (!embed) return embed;
 
-  embed.setColor(DEFAULT_EMBED_COLOR);
+  // Only set default color if not already set
+  if (!embed.data || !embed.data.color) {
+    embed.setColor(DEFAULT_EMBED_COLOR);
+  }
 
   // Only set the image if not already set.
   const hasImage = embed.data && embed.data.image;

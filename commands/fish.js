@@ -6,6 +6,15 @@ const { rods } = require('../data/rods');
 const { applyDefaultEmbedStyle } = require('../utils/embedStyle');
 const { simulatePull } = require('../utils/cards');
 
+function getRodColor(rodId) {
+  switch (rodId) {
+    case 'basic_rod': return '#8B4513'; // brown
+    case 'gold_rod': return '#FFD700'; // golden
+    case 'white_rod': return '#F8F8FF'; // shiny white
+    default: return '#FFFFFF';
+  }
+}
+
 function randomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
@@ -47,6 +56,22 @@ module.exports = {
       return interaction.reply({ content: reply, ephemeral: true });
     }
 
+    // Ensure current rod exists in inventory
+    const currentRodItem = user.items?.find(it => it.itemId === user.currentRod);
+    if (!currentRodItem) {
+      // Set to basic rod if available
+      const basicRodItem = user.items?.find(it => it.itemId === 'basic_rod');
+      if (basicRodItem) {
+        user.currentRod = 'basic_rod';
+      } else {
+        // Add basic rod
+        const basicRodData = rods.find(r => r.id === 'basic_rod');
+        user.items.push({ itemId: 'basic_rod', quantity: 1, durability: basicRodData.durability });
+        user.currentRod = 'basic_rod';
+        await user.save();
+      }
+    }
+
     // Check cooldown
     if (user.lastFishFail && Date.now() - user.lastFishFail.getTime() < 10000) {
       const remaining = Math.ceil((10000 - (Date.now() - user.lastFishFail.getTime())) / 1000);
@@ -59,7 +84,8 @@ module.exports = {
     const currentRodData = rods.find(r => r.id === user.currentRod);
     const embed = new EmbedBuilder()
       .setTitle(null)
-      .setDescription('**Waiting for a nibble...**');
+      .setDescription('**Waiting for a nibble...**')
+      .setColor(getRodColor(user.currentRod));
     if (currentRodData && currentRodData.thumbnail) {
       embed.setThumbnail(currentRodData.thumbnail);
     }
@@ -93,7 +119,8 @@ module.exports = {
 
       const embed2 = new EmbedBuilder()
         .setTitle(null)
-        .setDescription(`Progress: ${updateBar()}\n\nAim for the target (◉)! Click the button when the ■ is on the ◉ for the best catch!`);
+        .setDescription(`Progress: ${updateBar()}\n\nAim for the target (◉)! Click the button when the ■ is on the ◉ for the best catch!`)
+        .setColor(getRodColor(user.currentRod));
       
       // Get user's rod and set thumbnail
       const currentRodData2 = rods.find(r => r.id === user.currentRod);
@@ -117,7 +144,7 @@ module.exports = {
 
       // Start moving the tick - simple 1.5 second intervals
       let tickCount = 0;
-      const maxTicks = Math.floor(10000 / 1500); // 10 seconds / 1.5 seconds per tick = ~6-7 ticks
+      const maxTicks = 24; // 24 ticks total
       
       const interval = setInterval(async () => {
         tickCount++;
@@ -130,8 +157,9 @@ module.exports = {
           
           const timeoutEmbed = new EmbedBuilder()
             .setTitle(null)
-            .setDescription(`Progress: ${Array(barLength).fill('□').join('')}\n\n-# timed out`);
-          
+            .setDescription(`Progress: ${Array(barLength).fill('□').join('')}\n\n-# timed out`)
+            .setColor(getRodColor(user.currentRod));
+
           // Get user's rod and set thumbnail
           const currentRodData3 = rods.find(r => r.id === user.currentRod);
           if (currentRodData3 && currentRodData3.thumbnail) {
@@ -217,7 +245,8 @@ module.exports = {
 
     const embed = new EmbedBuilder()
       .setTitle(null)
-      .setDescription(`${outcome}`);
+      .setDescription(`${outcome}`)
+      .setColor(getRodColor(user.currentRod));
     applyDefaultEmbedStyle(embed, interaction.user);
 
     // Get user's rod and set thumbnail
@@ -293,7 +322,28 @@ module.exports = {
       const baseGem = randomInt(1, 2);
       const gemAmount = Math.max(1, Math.round(baseGem * (currentRodData?.multiplier || 1)));
       user.gems = (user.gems || 0) + gemAmount;
-      lootLines.push(`<:gem:1482371241231239682> ${gemAmount} gem${gemAmount > 1 ? 's' : ''}`);
+      lootLines.push(`<:gem:1490741488081043577> ${gemAmount} gem${gemAmount > 1 ? 's' : ''}`);
+    }
+
+    // Decrement rod durability
+    const currentRodItem = user.items.find(it => it.itemId === user.currentRod);
+    if (currentRodItem && currentRodItem.durability !== undefined) {
+      currentRodItem.durability -= 1;
+      if (currentRodItem.durability <= 0) {
+        // Remove broken rod from inventory
+        user.items = user.items.filter(it => it.itemId !== user.currentRod);
+        // Set current rod to basic_rod if available, otherwise keep current
+        const basicRodItem = user.items.find(it => it.itemId === 'basic_rod');
+        if (basicRodItem) {
+          user.currentRod = 'basic_rod';
+        } else {
+          // If no basic rod, add one
+          const basicRodData = rods.find(r => r.id === 'basic_rod');
+          user.items.push({ itemId: 'basic_rod', quantity: 1, durability: basicRodData.durability });
+          user.currentRod = 'basic_rod';
+        }
+        lootLines.push(`\n⚠️ Your ${currentRodData.name} broke!`);
+      }
     }
 
     embed.addFields({ name: 'Loot', value: lootLines.join('\n') });

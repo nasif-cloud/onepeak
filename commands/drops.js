@@ -1,6 +1,10 @@
+const fs = require('fs');
+const path = require('path');
 const User = require('../models/User');
-const { ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = require('discord.js');
 const { simulatePull } = require('../utils/cards');
+
+const DROP_CONFIG_FILE = path.join(__dirname, '..', 'drop.json');
 
 // Store active drops: drop ID -> { messageId, channelId, userId, expiresAt, card }
 const activeDrops = new Map();
@@ -10,11 +14,93 @@ let dropIntervalTimer = null;
 let dropsChannelId = null;
 let dropsClient = null; // Discord client reference
 
+function loadDropChannelId() {
+  try {
+    if (fs.existsSync(DROP_CONFIG_FILE)) {
+      const data = JSON.parse(fs.readFileSync(DROP_CONFIG_FILE, 'utf8'));
+      return data.channelId || null;
+    }
+  } catch (err) {
+    console.error('Error loading drop config:', err);
+  }
+  return null;
+}
+
+function saveDropChannelId(channelId) {
+  try {
+    fs.writeFileSync(DROP_CONFIG_FILE, JSON.stringify({ channelId }, null, 2));
+  } catch (err) {
+    console.error('Error saving drop config:', err);
+  }
+}
+
+async function createAttachmentFromUrl(url) {
+  if (!url) return null;
+  try {
+    const response = await fetch(url, { method: 'GET' });
+    if (!response.ok) return null;
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    let fileName;
+    try {
+      fileName = path.basename(new URL(url).pathname) || 'image.png';
+    } catch {
+      fileName = 'image.png';
+    }
+    if (!path.extname(fileName)) {
+      const contentType = response.headers.get('content-type');
+      if (contentType) {
+        if (contentType.includes('png')) fileName += '.png';
+        else if (contentType.includes('gif')) fileName += '.gif';
+        else if (contentType.includes('jpeg') || contentType.includes('jpg')) fileName += '.jpg';
+      }
+    }
+    return new AttachmentBuilder(buffer, { name: fileName });
+  } catch (err) {
+    return null;
+  }
+}
+
+function clearDropChannelId() {
+  try {
+    if (fs.existsSync(DROP_CONFIG_FILE)) {
+      fs.unlinkSync(DROP_CONFIG_FILE);
+    }
+  } catch (err) {
+    console.error('Error clearing drop config:', err);
+  }
+}
+
 /**
  * Initialize drops system - call this from index.js with client
  */
-function initializeDrops(client) {
+async function initializeDrops(client) {
   dropsClient = client;
+  if (!client) return;
+
+  const savedChannelId = loadDropChannelId();
+  if (savedChannelId) {
+    try {
+      await startDropTimer(client, savedChannelId);
+      console.log(`Resumed card drops in channel ${savedChannelId}`);
+    } catch (err) {
+      console.error('Unable to resume saved drop channel:', err.message || err);
+    }
+  }
+}
+
+/**
+ * Validate a configured drops channel before starting the timer.
+ */
+async function validateDropsChannel(client, channelId) {
+  if (!client || !channelId) return null;
+  try {
+    const channel = await client.channels.fetch(channelId);
+    if (!channel || (typeof channel.isTextBased === 'function' && !channel.isTextBased())) return null;
+    return channel;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -24,8 +110,12 @@ async function _spawnDrop() {
   if (!dropsClient || !dropsChannelId) return;
 
   try {
-    const channel = await dropsClient.channels.fetch(dropsChannelId);
-    if (!channel) return;
+    const channel = await validateDropsChannel(dropsClient, dropsChannelId);
+    if (!channel) {
+      console.error('Error spawning drop: drops channel is inaccessible or not a text channel. Stopping drop timer.');
+      stopDropTimer();
+      return;
+    }
 
     // Simulate a pull (U1 cards only)
     const card = simulatePull(0, null); // pityCount=0, no faculty filter
@@ -41,8 +131,32 @@ async function _spawnDrop() {
     );
 
     const dropContent = `A wild **${card.emoji} ${card.character} (${card.rank})** appeared!`;
-    const imageAttachment = new AttachmentBuilder(card.image_url);
-    const msg = await channel.send({ content: dropContent, components: [claimButton], files: [imageAttachment] });
+    const imageUrl = card.image_url;
+    let msg;
+
+    if (imageUrl) {
+      // Check if URL is from catbox.moe or wikia - send as embed since they don't work as attachments
+      if (imageUrl.includes('catbox.moe') || imageUrl.includes('wikia.nocookie.net')) {
+        const dropEmbed = new EmbedBuilder()
+          .setDescription(dropContent)
+          .setImage(imageUrl);
+        msg = await channel.send({ embeds: [dropEmbed], components: [claimButton] });
+      } else {
+        // For other URLs, send as attachment
+        const imageAttachment = await createAttachmentFromUrl(imageUrl);
+        if (imageAttachment) {
+          msg = await channel.send({ content: dropContent, components: [claimButton], files: [imageAttachment] });
+        } else {
+          // Fallback to embed if attachment creation fails
+          const dropEmbed = new EmbedBuilder()
+            .setDescription(dropContent)
+            .setImage(imageUrl || null);
+          msg = await channel.send({ embeds: [dropEmbed], components: [claimButton] });
+        }
+      }
+    } else {
+      msg = await channel.send({ content: dropContent, components: [claimButton] });
+    }
 
     // Store drop info with 10-minute expiration
     const expiresAt = Date.now() + 600000; // 10 minutes
@@ -71,9 +185,15 @@ async function _spawnDrop() {
 /**
  * Start the drop spawning timer
  */
-function startDropTimer(client, channelId) {
+async function startDropTimer(client, channelId) {
+  const channel = await validateDropsChannel(client, channelId);
+  if (!channel) {
+    throw new Error('Unable to access drops channel. Make sure the bot has view/send permission in that channel.');
+  }
+
   dropsClient = client;
   dropsChannelId = channelId;
+  saveDropChannelId(channelId);
   
   // Cancel existing timer
   if (dropIntervalTimer) {
@@ -98,6 +218,7 @@ function stopDropTimer() {
     dropIntervalTimer = null;
   }
   dropsChannelId = null;
+  clearDropChannelId();
 }
 
 /**
