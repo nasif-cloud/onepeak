@@ -43,7 +43,7 @@ module.exports = {
     const user = await User.findOne({ userId });
     if (!user) {
       const reply = 'You don\'t have an account. Run `/start` to register.';
-      if (message) return message.reply(reply);
+      if (message) return message.channel.send(reply);
       return interaction.reply({ content: reply, ephemeral: true });
     }
 
@@ -51,7 +51,7 @@ module.exports = {
     if (user.lastFishFail && Date.now() - user.lastFishFail.getTime() < 10000) {
       const remaining = Math.ceil((10000 - (Date.now() - user.lastFishFail.getTime())) / 1000);
       const reply = `You scared the fish away! Wait ${remaining} seconds before fishing again.`;
-      if (message) return message.reply(reply);
+      if (message) return message.channel.send(reply);
       return interaction.reply({ content: reply, ephemeral: true });
     }
 
@@ -73,8 +73,9 @@ module.exports = {
       replyMsg = null;
     }
 
-    // Random delay 1-10 seconds
-    const delay = Math.random() * 9000 + 1000;
+    // Random delay 1-10 seconds adjusted by rod speed multiplier
+    const rodMultiplier = currentRodData?.multiplier || 1;
+    const delay = (Math.random() * 9000 + 1000) / rodMultiplier;
     setTimeout(async () => {
       // Check if still valid
       if (!message && !interaction.replied) return;
@@ -92,7 +93,7 @@ module.exports = {
 
       const embed2 = new EmbedBuilder()
         .setTitle(null)
-        .setDescription(`**Catch it!**\n\nProgress: ${updateBar()}\n\nAim for the target (◉)! Click the button when the ■ is on the ◉ for the best catch!`);
+        .setDescription(`Progress: ${updateBar()}\n\nAim for the target (◉)! Click the button when the ■ is on the ◉ for the best catch!`);
       
       // Get user's rod and set thumbnail
       const currentRodData2 = rods.find(r => r.id === user.currentRod);
@@ -114,13 +115,47 @@ module.exports = {
         await interaction.editReply({ embeds: [embed2], components: [row] });
       }
 
-      // Start moving the tick
+      // Start moving the tick - simple 1.5 second intervals
+      let tickCount = 0;
+      const maxTicks = Math.floor(10000 / 1500); // 10 seconds / 1.5 seconds per tick = ~6-7 ticks
+      
       const interval = setInterval(async () => {
+        tickCount++;
         position = (position + 1) % barLength;
+        
+        // Check if we've reached the timeout
+        if (tickCount >= maxTicks) {
+          clearInterval(interval);
+          fishingStates.delete(userId);
+          
+          const timeoutEmbed = new EmbedBuilder()
+            .setTitle(null)
+            .setDescription(`Progress: ${Array(barLength).fill('□').join('')}\n\n-# timed out`);
+          
+          // Get user's rod and set thumbnail
+          const currentRodData3 = rods.find(r => r.id === user.currentRod);
+          if (currentRodData3 && currentRodData3.thumbnail) {
+            timeoutEmbed.setThumbnail(currentRodData3.thumbnail);
+          }
+          applyDefaultEmbedStyle(timeoutEmbed, discordUser);
+          
+          try {
+            if (message) {
+              await replyMsg.edit({ embeds: [timeoutEmbed], components: [] });
+            } else {
+              await interaction.editReply({ embeds: [timeoutEmbed], components: [] });
+            }
+          } catch (e) {
+            // Message might be deleted or interaction expired
+          }
+          return;
+        }
+        
         const newBar = Array(barLength).fill('□');
         newBar[position] = '■';
         newBar[targetIndex] = position === targetIndex ? '◉' : '◯';
         embed2.setDescription(`Progress: ${newBar.join('')}\n\nAim for the target (◉)! Click the button when the ■ is on the ◉ for the best catch!`);
+        
         try {
           if (message) {
             await replyMsg.edit({ embeds: [embed2], components: [row] });
@@ -128,11 +163,11 @@ module.exports = {
             await interaction.editReply({ embeds: [embed2], components: [row] });
           }
         } catch (e) {
-          // Message might be deleted or something
+          // Message might be deleted or interaction expired
           clearInterval(interval);
           fishingStates.delete(userId);
         }
-      }, Math.random() * 1500 + 1500); // 1.5 to 3 seconds
+      }, 1500); // 1.5 seconds per tick
 
       // Store additional info for message-based commands
       fishingStates.set(userId, { 
@@ -141,15 +176,23 @@ module.exports = {
         targetIndex,
         clear: () => clearInterval(interval),
         message: replyMsg,
-        interaction: interaction
+        interaction: interaction,
+        createdAt: Date.now()
       });
     }, delay);
   },
 
   // Function to handle the catch
   async handleCatch(interaction, userId) {
+    // Only allow the user who created the embed to click the button
+    if (interaction.user.id !== userId) {
+      return interaction.reply({ content: 'This is not your fishing session!', ephemeral: true });
+    }
+
     const state = fishingStates.get(userId);
-    if (!state) return;
+    if (!state) {
+      return interaction.reply({ content: 'Your fishing session has expired. Try fishing again!', ephemeral: true });
+    }
 
     state.clear();
     fishingStates.delete(userId);
@@ -189,18 +232,13 @@ module.exports = {
 
     // Determine number of items based on rod and catch quality
     let itemCount = 1;
-    const rodMultiplier = currentRodData?.betterRankMultiplier || 1;
+    const rodMultiplier = currentRodData?.multiplier || 1;
     const qualityPenalty = distance === 1 ? 0.75 : 1;
-    if (currentRodData && currentRodData.id === 'gold_rod') {
-      // Gold rod: 50% of 2 items, 10% of 3 items
-      const rand = Math.random();
-      if (rand < 0.1) itemCount = 3;
-      else if (rand < 0.6) itemCount = 2;
-    } else if (currentRodData && currentRodData.id === 'white_rod') {
-      // White rod: 100% of 2 items, 30% of 3 items
-      const rand = Math.random();
-      if (rand < 0.3) itemCount = 3;
+    if (rodMultiplier >= 1.5) {
+      if (Math.random() < 0.3) itemCount = 3;
       else itemCount = 2;
+    } else if (rodMultiplier >= 1.25) {
+      if (Math.random() < 0.4) itemCount = 2;
     }
 
     // Determine loot
@@ -247,6 +285,15 @@ module.exports = {
           user.items.push({ itemId: randomLeveler.id, quantity: 1 });
         }
       }
+    }
+
+    // 3% chance to get gems; scale final gem amount by rod multiplier
+    const gemChance = Math.random();
+    if (gemChance < 0.03) {
+      const baseGem = randomInt(1, 2);
+      const gemAmount = Math.max(1, Math.round(baseGem * (currentRodData?.multiplier || 1)));
+      user.gems = (user.gems || 0) + gemAmount;
+      lootLines.push(`<:gem:1482371241231239682> ${gemAmount} gem${gemAmount > 1 ? 's' : ''}`);
     }
 
     embed.addFields({ name: 'Loot', value: lootLines.join('\n') });

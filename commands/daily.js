@@ -61,7 +61,7 @@ module.exports = {
     let user = await User.findOne({ userId });
     if (!user) {
       const reply = 'You don\'t have an account. Run `op start` or /start to register.';
-      if (message) return message.reply(reply);
+      if (message) return message.channel.send(reply);
       return interaction.reply({ content: reply, ephemeral: true });
     }
 
@@ -78,7 +78,7 @@ module.exports = {
       const hours = Math.floor(remainingMs / (1000 * 60 * 60));
       const minutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
       const reply = `You can claim your daily reward in \`${hours}h ${minutes}m\`.`;
-      if (message) return message.reply(reply);
+      if (message) return message.channel.send(reply);
       return interaction.reply({ content: reply, ephemeral: true });
     }
 
@@ -122,30 +122,34 @@ module.exports = {
     user.markModified('packInventory');
     await user.save();
 
+    // Calculate time until next claim
+    const nextClaimTime = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    const nextRemainingMs = nextClaimTime.getTime() - Date.now();
+    const nextHours = Math.floor(nextRemainingMs / (1000 * 60 * 60));
+    const nextMinutes = Math.floor((nextRemainingMs % (1000 * 60 * 60)) / (1000 * 60));
+
     // Emoji constants
     const nextEmoji = '<:next:1489374606916714706>';
-    const beliIcon = '<:beli:1482371237991239681>';
-    const gemIcon = '<:gem:1482371241231239682>';
-    // Find a pack emoji for each pack (use crew icon)
+    const beliIcon = '<:beri:1490738445319016651>';
+    const gemIcon = '<:gem:1490741488081043577>';
+    // Format pack rewards
     let packLines = [];
     if (packRewards.length > 0) {
       for (const packName of packRewards) {
-        const crew = crews.find(c => c.name === packName);
-        const packEmoji = crew && crew.icon ? crew.icon : '';
-        packLines.push(`${nextEmoji} 1 ${packEmoji} ${packName}`);
+        packLines.push(`${nextEmoji} 1x ${packName.toLowerCase()} pack`);
       }
     }
     // Compose lines
     const lines = [
       '**Daily rewards claimed!**',
-      `${nextEmoji} ${beliReward} beli ${beliIcon}`,
-      `${nextEmoji} ${gemsReward} gems ${gemIcon}`
+      `${nextEmoji} ${beliIcon} ${beliReward} beli`,
+      `${nextEmoji} ${gemIcon} ${gemsReward} gems`
     ];
     if (packLines.length > 0) {
       lines.push(...packLines);
     }
     lines.push(`\n**Streak**: ${getStreakString(newStreak)}`);
-    lines.push(`-# come back in \`${hours}h ${minutes}m\` for more rewards.`);
+    lines.push(`-# come back in \`${nextHours}h ${nextMinutes}m\` for more rewards.`);
 
     const embed = new EmbedBuilder()
       .setColor('#FFFFFF')

@@ -71,27 +71,27 @@ module.exports = {
     let user = await User.findOne({ userId });
     if (!user) {
       const reply = 'You don\'t have an account to upgrade cards.';
-      if (message) return message.reply(reply);
+      if (message) return message.channel.send(reply);
       return interaction.reply({ content: reply, ephemeral: true });
     }
 
     const base = await findBestOwnedCard(userId, query);
     if (!base) {
-      const reply = `No card found matching "${query}".`;
-      if (message) return message.reply(reply);
+      const reply = `No card found matching **${query}**.`;
+      if (message) return message.channel.send(reply);
       return interaction.reply({ content: reply, ephemeral: true });
     }
 
     const ownedEntry = user.ownedCards.find(e => e.cardId === base.id);
     if (!ownedEntry) {
       const reply = `You don't own **${base.character}** mastery ${base.mastery}.`;
-      if (message) return message.reply(reply);
+      if (message) return message.channel.send(reply);
       return interaction.reply({ content: reply, ephemeral: true });
     }
 
     if (base.mastery >= base.mastery_total) {
       const reply = `**${base.character}** is already at maximum mastery.`;
-      if (message) return message.reply(reply);
+      if (message) return message.channel.send(reply);
       return interaction.reply({ content: reply, ephemeral: true });
     }
 
@@ -99,7 +99,7 @@ module.exports = {
     const next = cards.find(c => c.character === base.character && c.mastery === base.mastery + 1);
     if (!next) {
       const reply = `No higher mastery found for **${base.character}**.`;
-      if (message) return message.reply(reply);
+      if (message) return message.channel.send(reply);
       return interaction.reply({ content: reply, ephemeral: true });
     }
 
@@ -114,14 +114,14 @@ module.exports = {
         .setFooter({ text: `Next version: ${next.title || next.character}` })
         .setAuthor({ name: username, iconURL: avatarUrl });
 
-      if (message) return message.reply({ embeds: [embed] });
+      if (message) return message.channel.send({ embeds: [embed] });
       return interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
     const requiredInfo = getRequiredLevelerInfo(next.rank);
     if (!requiredInfo) {
       const reply = `Upgrade requirements not defined for ${next.rank} mastery.`;
-      if (message) return message.reply(reply);
+      if (message) return message.channel.send(reply);
       return interaction.reply({ content: reply, ephemeral: true });
     }
 
@@ -141,7 +141,7 @@ module.exports = {
 
     const embed = new EmbedBuilder()
       .setColor('#FFFFFF')
-      .setTitle(`Upgrade ${base.character}`)
+      .setTitle(`${base.emoji} Upgrade ${base.character}`)
       .setDescription(`**Current:** Mastery ${base.mastery}\n**Next:** Mastery ${next.mastery}\n\nYou need levelers matching the card's attribute to upgrade.`)
       .setAuthor({ name: username, iconURL: avatarUrl })
       .addFields(
@@ -172,7 +172,7 @@ module.exports = {
 
     let msg;
     if (message) {
-      msg = await message.reply({ embeds: [embed], components: [buttons] });
+      msg = await message.channel.send({ embeds: [embed], components: [buttons] });
     } else {
       msg = await interaction.reply({ embeds: [embed], components: [buttons], fetchReply: true });
     }

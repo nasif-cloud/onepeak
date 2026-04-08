@@ -3,6 +3,7 @@ const { cards } = require('../data/cards');
 const { EmbedBuilder } = require('discord.js');
 const { rods } = require('../data/rods');
 const { applyDefaultEmbedStyle } = require('../utils/embedStyle');
+const { PULL_LIMIT } = require('../config');
 
 module.exports = {
   name: 'start',
@@ -22,7 +23,7 @@ module.exports = {
     const basicRod = rods.find(r => r.id === 'basic_rod');
     user = new User({
       userId,
-      pullsRemaining: 8,
+      pullsRemaining: PULL_LIMIT,
       lastReset: new Date(),
       pityCount: 0,
       ownedCards: starter ? [{ cardId: starter.id, level: 1, xp: 0 }] : [],
@@ -37,10 +38,10 @@ module.exports = {
       .setTitle('Account Created!')
       .setDescription(
         `You received the following rewards:` +
-        `\n• **${starter.character}** (starter card)` +
+        `\n• ${starter.emoji} **${starter.character}** (starter card)` +
         `\n• ${basicRod.emoji} **${basicRod.name}** (fishing rod)` +
-        `\n• ¥ **500** Beli` +
-        `\n• <:reset:1483825882341703692> **5** Reset Tokens`
+        `\n• <:beri:1490738445319016651> **500** Beli` +
+        `\n• <:resettoken:1490738386540171445> **5** Reset Tokens`
       );
     applyDefaultEmbedStyle(embed, discordUser);
 

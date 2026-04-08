@@ -31,7 +31,7 @@ module.exports = {
       let requester = await User.findOne({ userId });
       if (!requester) {
         const reply = 'You don\'t have an account. Run `op start` or /start to register.';
-        if (message) return message.reply(reply);
+        if (message) return message.channel.send(reply);
         return interaction.reply({ content: reply, ephemeral: true });
       }
       requester.activeBountyTarget = null;
@@ -42,7 +42,7 @@ module.exports = {
     let requester = await User.findOne({ userId });
     if (!requester) {
       const reply = 'You don\'t have an account. Run `op start` or /start to register.';
-      if (message) return message.reply(reply);
+      if (message) return message.channel.send(reply);
       return interaction.reply({ content: reply, ephemeral: true });
     }
 
@@ -51,13 +51,13 @@ module.exports = {
       const targetDiscord = await (message ? message.client.users.fetch(requester.activeBountyTarget) : interaction.client.users.fetch(requester.activeBountyTarget)).catch(() => null);
       const targetName = targetDiscord ? targetDiscord.username : 'Unknown';
       const reply = `You can not claim a new bounty until you defeat **${targetName}**.`;
-      if (message) return message.reply(reply);
+      if (message) return message.channel.send(reply);
       return interaction.reply({ content: reply, ephemeral: true });
     }
     if (requester.bountyCooldownUntil && requester.bountyCooldownUntil > new Date()) {
       const timeLeft = formatRelativeTime(requester.bountyCooldownUntil);
       const reply = `You can not claim a new bounty until your cooldown of ${timeLeft} resets.`;
-      if (message) return message.reply(reply);
+      if (message) return message.channel.send(reply);
       return interaction.reply({ content: reply, ephemeral: true });
     }
 
@@ -74,7 +74,7 @@ module.exports = {
 
     if (candidates.length === 0) {
       const reply = `No suitable bounty targets found. Targets must have bounty between **${minBounty}** and **${maxBounty}**.`;
-      if (message) return message.reply(reply);
+      if (message) return message.channel.send(reply);
       return interaction.reply({ content: reply, ephemeral: true });
     }
 
@@ -102,7 +102,7 @@ module.exports = {
       .setTitle('Bounty Challenge')
       .setDescription(`Defeat **${opponentName}** in a duel to claim 2x the reward!`)
       .addFields(
-        { name: 'Rewards', value: `• Bounty: ¥${targetBounty}\n• Beli: ¥${rewardBeli}\n• XP: ${rewardXP}`, inline: false }
+        { name: 'Rewards', value: `• Bounty: <:bounty:1490738541448400976>${targetBounty}\n• Beli: <:beri:1490738445319016651>${rewardBeli}\n• XP: ${rewardXP}`, inline: false }
       )
       .setImage('https://i.pinimg.com/1200x/65/7c/06/657c066ce2b36625b6d56398128150fb.jpg')
       .setFooter({ text: 'Expires in a day' })

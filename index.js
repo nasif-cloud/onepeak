@@ -70,6 +70,9 @@ async function main() {
         if (action === 'collection_sort_select') {
           return require('./commands/collection').handleButton(interaction, interaction.customId);
         }
+        if (action === 'help_category') {
+          return require('./commands/help').handleCategorySelect(interaction);
+        }
       }
 
       if (interaction.isChatInputCommand()) {
@@ -93,15 +96,23 @@ async function main() {
         if (commandName === 'open') return openCmd.execute({ interaction });
         if (commandName === 'timers') return timersCmd.execute({ interaction });
         if (commandName === 'info') return require('./commands/info').execute({ interaction });
+        if (commandName === 'card') return require('./commands/card').execute({ interaction });
         if (commandName === 'upgrade') return require('./commands/upgrade').execute({ interaction });
         if (commandName === 'balance') return require('./commands/balance').execute({ interaction });
         if (commandName === 'isail') return require('./commands/isail').execute({ interaction });
         if (commandName === 'fish') return require('./commands/fish').execute({ interaction });
         if (commandName === 'feed') return require('./commands/feed').execute({ interaction });
+        if (commandName === 'help') return require('./commands/help').execute({ interaction });
       }
 
       if (interaction.isButton()) {
         const [action, cardId] = interaction.customId.split(':');
+        
+        // handle help back button
+        if (action === 'help_back') {
+          return require('./commands/help').handleBack(interaction);
+        }
+        
         // existing card pager buttons
         if (action === 'mastery_prev' || action === 'mastery_next') {
           const { cards } = require('./data/cards');
@@ -256,6 +267,7 @@ async function main() {
     const args = payload.split(/ +/g);
     let cmd = args.shift().toLowerCase();
     // alias shortcuts
+    if (cmd === 'p') cmd = 'pull';
     if (cmd === 'opp') cmd = 'pull';
     if (cmd === 'inv') cmd = 'inventory';
     if (cmd === 't') cmd = 'timers';
@@ -286,6 +298,7 @@ async function main() {
       if (cmd === 'isail') return await require('./commands/isail').execute({ message });
       if (cmd === 'fish') return await require('./commands/fish').execute({ message });
       if (cmd === 'feed') return await require('./commands/feed').execute({ message, args });
+      if (cmd === 'help' || cmd === 'h') return await require('./commands/help').execute({ message });
       if (cmd === 'ownerlist') return await require('./commands/owner').list({ message });
       if (cmd === 'owner') return await require('./commands/owner').execute({ message, args });
       return; // unknown command - don't respond

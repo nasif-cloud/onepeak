@@ -6,9 +6,9 @@ module.exports = {
   async execute({ message, interaction }) {
     const discordUser = message ? message.author : interaction.user;
     const embed = new EmbedBuilder()
-      .setColor('#FFFFFF')
+      .setColor('#f4e66c')
       .setTitle('Shop')
-      .setImage('https://files.catbox.moe/canva-shop-menu.png') // Replace with actual Canva menu image URL
+      .setImage('https://files.catbox.moe/cogl6i.webp')
       .setAuthor({ name: discordUser.username, iconURL: discordUser.displayAvatarURL() });
 
     if (message) return message.channel.send({ embeds: [embed] });

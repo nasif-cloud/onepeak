@@ -1,6 +1,6 @@
 const User = require('../models/User');
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType } = require('discord.js');
-const { simulatePull, buildPullEmbed } = require('../utils/cards');
+const { ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { simulatePull } = require('../utils/cards');
 
 // Store active drops: drop ID -> { messageId, channelId, userId, expiresAt, card }
 const activeDrops = new Map();
@@ -32,18 +32,17 @@ async function _spawnDrop() {
 
     if (!card) return;
 
-    // Build drop embed using the card's image
     const dropId = `drop_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const dropEmbed = buildPullEmbed(card);
-    
     const claimButton = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
         .setCustomId(`drop_claim:${dropId}`)
         .setLabel('Claim Card')
-        .setStyle(ButtonStyle.Success)
+        .setStyle(ButtonStyle.Secondary)
     );
 
-    const msg = await channel.send({ embeds: [dropEmbed], components: [claimButton] });
+    const dropContent = `A wild **${card.emoji} ${card.character} (${card.rank})** appeared!`;
+    const imageAttachment = new AttachmentBuilder(card.image_url);
+    const msg = await channel.send({ content: dropContent, components: [claimButton], files: [imageAttachment] });
 
     // Store drop info with 10-minute expiration
     const expiresAt = Date.now() + 600000; // 10 minutes

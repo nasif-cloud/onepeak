@@ -13,6 +13,17 @@ async function safeDefer(interaction) {
     if (e.code !== 10062) console.error('Failed to defer interaction:', e);
   }
 }
+
+// helper to safely update battle messages without crashing when message is deleted
+async function safeUpdateBattleMessage(msg, state, user, discordUser) {
+  try {
+    await updateBattleMessage(msg, state, user, discordUser);
+  } catch (e) {
+    if (e.code !== 10008) {
+      console.error('Error updating battle message:', e);
+    }
+  }
+}
 const User = require('../models/User');
 const { cards: cardDefs } = require('../data/cards');
 const marines = require('../data/marines');
@@ -278,7 +289,10 @@ function buildEmbed(state, user, discordUser) {
   const aliveMarines = state.marines.filter(m => m.currentHP > 0);
   if (aliveMarines.length > 0) {
     for (const m of aliveMarines) {
-      const statusEmojis = (m.status || []).map(st => STATUS_EMOJIS[st.type] || '').join('');
+      const statusEmojis = (m.status || []).map(st => {
+        const emoji = STATUS_EMOJIS[st.type] || '';
+        return st.stacks && st.stacks > 1 ? `${emoji}x${st.stacks}` : emoji;
+      }).join(' ');
       const value = `${statusEmojis} ${hpBar(m.currentHP, m.maxHP)}\n${m.currentHP}/${m.maxHP}`;
       embed.addFields({ name: `${m.emoji} ${m.rank}`, value, inline: true });
     }
@@ -293,8 +307,11 @@ function buildEmbed(state, user, discordUser) {
   const aliveCards = state.cards.filter(c => c.currentHP > 0);
   if (aliveCards.length > 0) {
     for (const c of aliveCards) {
-      const statusEmojis = (c.status || []).map(st => STATUS_EMOJIS[st.type] || '').join('');
-      const prefix = statusEmojis || (c.def.emoji || '');
+      const statusEmojis = (c.status || []).map(st => {
+        const emoji = STATUS_EMOJIS[st.type] || '';
+        return st.stacks && st.stacks > 1 ? `${emoji}x${st.stacks}` : emoji;
+      }).join(' ');
+      const prefix = `${c.def.emoji || ''} ${statusEmojis}`.trim();
       const idx = state.cards.indexOf(c);
       const isSelected = state.selected !== null && idx === state.selected;
       const level = c.userEntry ? c.userEntry.level : 1;
@@ -404,7 +421,15 @@ async function updateBattleMessage(msg, state, user, discordUser) {
       components.push(nextIsailRow);
     }
   }
-  await msg.edit({ embeds: [embed], components });
+  try {
+    await msg.edit({ embeds: [embed], components });
+  } catch (e) {
+    // Ignore 10008 (Unknown Message) - message was deleted
+    if (e.code !== 10008) {
+      console.error('Error handling isail button:', e);
+    }
+    return;
+  }
   // manage inactivity timer
   if (state.finished) {
     clearBattleTimeout(state);
@@ -1070,7 +1095,7 @@ module.exports = {
           try {
             let desc = `${card.def.character} uses ${card.def.special_attack.name || 'Special Attack'}!`;
             if (card.def.effect && card.def.effectDuration) {
-              const effectDesc = getEffectDescription(card.def.effect, card.def.effectDuration);
+              const effectDesc = getEffectDescription(card.def.effect, card.def.effectDuration, !!card.def.itself);
               if (effectDesc) desc += `\n*${effectDesc}*`;
             }
             const gifEmbed = new EmbedBuilder()
@@ -1118,7 +1143,7 @@ module.exports = {
       }
       state.selected = idx;
       // no desktop art; gif-only display handled separately
-      await updateBattleMessage(interaction.message, state, await User.findOne({ userId: state.userId }), discordUser);
+      await safeUpdateBattleMessage(interaction.message, state, await User.findOne({ userId: state.userId }), discordUser);
       return safeDefer(interaction);
     }
 
@@ -1141,7 +1166,7 @@ module.exports = {
       const card = state.cards[state.selected];
       if (!card || !card.alive) {
         state.selected = null;
-        await updateBattleMessage(interaction.message, state, await User.findOne({ userId: state.userId }), discordUser);
+        await safeUpdateBattleMessage(interaction.message, state, await User.findOne({ userId: state.userId }), discordUser);
         return interaction.followUp({ content: 'Selected card is unavailable.', ephemeral: true });
       }
       if (state.turn !== 'user') {
@@ -1161,7 +1186,7 @@ module.exports = {
         let targetIdx = state.marines.findIndex(m => m.currentHP > 0);
         if (aliveEnemies.length > 1 && !state.awaitingTarget) {
           state.awaitingTarget = act;
-          await updateBattleMessage(interaction.message, state, await User.findOne({ userId: state.userId }), discordUser);
+          await safeUpdateBattleMessage(interaction.message, state, await User.findOne({ userId: state.userId }), discordUser);
           return safeDefer(interaction);
         }
         // cost checks and energy deduction
@@ -1226,7 +1251,7 @@ module.exports = {
           try {
             let desc = `${card.def.character} uses ${card.def.special_attack.name || 'Special Attack'}!`;
             if (card.def.effect && card.def.effectDuration) {
-              const effectDesc = getEffectDescription(card.def.effect, card.def.effectDuration);
+              const effectDesc = getEffectDescription(card.def.effect, card.def.effectDuration, !!card.def.itself);
               if (effectDesc) desc += `\n*${effectDesc}*`;
             }
             const gifEmbed = new EmbedBuilder()
@@ -1240,7 +1265,7 @@ module.exports = {
           }
         }
         const cost = act === 'attack' ? 1 : act === 'special' ? 3 : 1;
-        const effectivenessStr = attrMultiplier > 1 ? ' (super effective)' : attrMultiplier < 1 ? ' (not very effective)' : '';
+        const effectivenessStr = attrMultiplier > 1 ? ' (Effective!)' : attrMultiplier < 1 ? ' (Weak)' : '';
         const effectMessages = effectLogs.length > 0 ? ` *${effectLogs.join(', ')}*` : '';
         if (act === 'special') {
           if (card.def.effect === 'team_stun') {
@@ -1263,8 +1288,22 @@ module.exports = {
       // Clear log after action to prevent accumulation
       state.log = '';
 
-      const finished = await finalizeUserAction(state, interaction.message, interaction);
-      if (finished) battleStates.delete(msgId);
+      try {
+        const finished = await finalizeUserAction(state, interaction.message, interaction);
+        if (finished) battleStates.delete(msgId);
+      } catch (e) {
+        // If message was deleted or interaction expired, clean up gracefully
+        if (e.code === 10008 || e.code === 10062) {
+          battleStates.delete(msgId);
+          if (!interaction.deferred && !interaction.replied) {
+            try {
+              await interaction.reply({ content: 'Battle session ended (message deleted or expired).', ephemeral: true });
+            } catch {}
+          }
+        } else {
+          throw e;
+        }
+      }
       return safeDefer(interaction);
     }
 

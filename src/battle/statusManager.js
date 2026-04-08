@@ -21,7 +21,24 @@ function randomInt(min, max) {
 function addStatus(entity, type, duration, data = {}) {
   if (!entity) return;
   if (!entity.status) entity.status = [];
-  entity.status.push({ type, remaining: duration, ...data });
+  
+  // Check if this status type already exists
+  const existingStatus = entity.status.find(st => st.type === type);
+  
+  if (existingStatus) {
+    // Stack up to 3 of the same status effect
+    if (!existingStatus.stacks) existingStatus.stacks = 1;
+    if (existingStatus.stacks < 3) {
+      existingStatus.stacks += 1;
+      // Also update the duration to the new one
+      existingStatus.remaining = duration;
+      // Update data fields too
+      Object.assign(existingStatus, { ...data, stacks: existingStatus.stacks });
+    }
+  } else {
+    // New status effect
+    entity.status.push({ type, remaining: duration, stacks: 1, ...data });
+  }
 }
 
 function hasStatusLock(card) {
@@ -151,8 +168,8 @@ function applyCardEffect(attacker, target) {
   const def = attacker.def;
   // Store original duration for message display
   const origDur = def.effectDuration || 1;
-  // If duration is 0, effect is permanent (use Infinity internally)
-  let dur = origDur === 0 ? Infinity : origDur;
+  // If duration is 0 or -1, effect is permanent (use Infinity internally)
+  let dur = origDur === 0 || origDur === -1 ? Infinity : origDur;
 
   const selfEffects = ['truesight', 'undead'];
   const applyTo = def.effect === 'team_stun' ? target : (def.itself || selfEffects.includes(def.effect) ? attacker : target);

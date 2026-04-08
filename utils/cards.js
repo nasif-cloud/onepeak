@@ -257,7 +257,14 @@ function simulatePull(pityCount, faculty = null, options = {}) {
 
 // Build a pull embed according to spec
 function buildPullEmbed(card, username, avatarUrl, pityText, duplicateInfo) {
-  const color = (rankData[card.rank] && rankData[card.rank].color) || '#2b2d31';
+  const attributeColors = {
+    STR: '#ff4b4b',
+    DEX: '#33cc33',
+    QCK: '#3498ff',
+    PSY: '#f5df4d',
+    INT: '#9b59b6'
+  };
+  const color = attributeColors[card.attribute] || (rankData[card.rank] && rankData[card.rank].color) || '#2b2d31';
   // same emoji handling as buildCardEmbed: transform `<:name:id>` into a CDN URL
   let iconVal = crewIcons[card.faculty];
   if (iconVal && iconVal.startsWith && iconVal.startsWith('<:')) {
@@ -281,27 +288,52 @@ function buildPullEmbed(card, username, avatarUrl, pityText, duplicateInfo) {
     statsText += `\n**Attack:** ${attackVal}`;
   }
   
+  // Build description with rank field
+  const descLines = [
+    card.title || '',
+    `**Rank:** ${card.rank}`
+  ];
+  
   const embed = new EmbedBuilder()
     .setColor(color)
     .setTitle(`${card.character}`)
     .setAuthor(author)
-    .setDescription(card.title || '')
+    .setDescription(descLines.join('\n'))
     .addFields(
       { name: 'Stats', value: statsText, inline: false }
     )
     .setImage(card.image_url || null)
     .setFooter({ text: `${username} pulled this card | ${pityText}${duplicateInfo ? ` | ${duplicateInfo}` : ''}`, iconURL: avatarUrl || null });
 
-  // rank badge at top-right (thumbnail) when a badge URL is defined
-  const rankBadge = rankData[card.rank] && rankData[card.rank].badge;
-  if (rankBadge) embed.setThumbnail(rankBadge);
+  // Use card emoji as thumbnail (like card embeds), with fallback to rank badge
+  const emojiThumbnail = getEmojiImageUrl(card.emoji);
+  if (emojiThumbnail) {
+    embed.setThumbnail(emojiThumbnail);
+  } else {
+    const rankBadge = rankData[card.rank] && rankData[card.rank].badge;
+    if (rankBadge) embed.setThumbnail(rankBadge);
+    else if (iconVal && iconVal.startsWith && iconVal.startsWith('http')) embed.setThumbnail(iconVal);
+  }
 
   return embed;
 }
 
 // Build a card embed according to spec
+function getEmojiImageUrl(emoji) {
+  if (!emoji || typeof emoji !== 'string') return null;
+  const match = emoji.match(/<a?:[^:]+:(\d+)>/);
+  return match ? `https://cdn.discordapp.com/emojis/${match[1]}.png` : null;
+}
+
 function buildCardEmbed(cardDef, userEntry, avatarUrl, user) {
-  const color = (rankData[cardDef.rank] && rankData[cardDef.rank].color) || '#2b2d31';
+  const attributeColors = {
+    STR: '#ff4b4b',
+    DEX: '#33cc33',
+    QCK: '#3498ff',
+    PSY: '#f5df4d',
+    INT: '#9b59b6'
+  };
+  const color = attributeColors[cardDef.attribute] || (rankData[cardDef.rank] && rankData[cardDef.rank].color) || '#2b2d31';
   let iconText = crewIcons[cardDef.faculty];
   let iconUrl = iconText;
   if (iconText && iconText.startsWith && iconText.startsWith('<:')) {
@@ -330,13 +362,16 @@ function buildCardEmbed(cardDef, userEntry, avatarUrl, user) {
   // Blank line after title
   // Dex/attribute emoji below title, above level
   const attributeIcon = getAttributeEmoji(cardDef.attribute);
-  let descLines = [
+  const descLines = [
     titleLine,
     '',
-    `**Dex:** ${attributeIcon}`,
-    `**Level:** ${lvl}${isOwned && userEntry && typeof userEntry.xp === 'number' ? ` (XP: ${userEntry.xp})` : ''}`,
-    `**Owned:** ${isOwned ? 'Yes' : 'No'}`
+    `**Attribute:** ${attributeIcon}`
   ];
+  if (isOwned) {
+    descLines.push(`**Level:** ${lvl}${userEntry && typeof userEntry.xp === 'number' ? ` (XP: ${userEntry.xp})` : ''}`);
+  }
+  descLines.push(`**Owned:** ${isOwned ? 'Yes' : 'No'}`);
+  descLines.push(`**Rank:** ${cardDef.rank}`);
 
   const embed = new EmbedBuilder()
     .setColor(color)
@@ -346,9 +381,14 @@ function buildCardEmbed(cardDef, userEntry, avatarUrl, user) {
     .setImage(cardDef.image_url || null)
     .setFooter({ text: `Mastery ${cardDef.mastery}/${cardDef.mastery_total}`, iconURL: avatarUrl || null });
 
-  const rankBadge = rankData[cardDef.rank] && rankData[cardDef.rank].badge;
-  if (rankBadge) embed.setThumbnail(rankBadge);
-  else if (iconUrl && iconUrl.startsWith && iconUrl.startsWith('http')) embed.setThumbnail(iconUrl);
+  const emojiThumbnail = getEmojiImageUrl(cardDef.emoji);
+  if (emojiThumbnail) {
+    embed.setThumbnail(emojiThumbnail);
+  } else {
+    const rankBadge = rankData[cardDef.rank] && rankData[cardDef.rank].badge;
+    if (rankBadge) embed.setThumbnail(rankBadge);
+    else if (iconUrl && iconUrl.startsWith && iconUrl.startsWith('http')) embed.setThumbnail(iconUrl);
+  }
 
   const statsLines = [
     `**Health:** ${scaled.health}`
@@ -367,6 +407,7 @@ function buildCardEmbed(cardDef, userEntry, avatarUrl, user) {
       // Regex: target, optional stat, percent
       const regex = /([\w .'-]+?)(?:,\s*([\w ]+))?\s*\((\d+)%\)/gi;
       let match;
+      const boostsByPct = {};
       while ((match = regex.exec(cardDef.boost)) !== null) {
         const targetName = match[1].trim();
         const stat = match[2] ? match[2].trim() : null;
@@ -374,20 +415,30 @@ function buildCardEmbed(cardDef, userEntry, avatarUrl, user) {
         // Find emoji for target (crew or card)
         let emoji = '';
         const crew = crews.find(cr => cr.name.toLowerCase().replace(/-/g, '').replace(/ /g, '') === targetName.toLowerCase().replace(/-/g, '').replace(/ /g, ''));
-        if (crew && crew.icon) emoji = crew.icon + ' ';
+        if (crew && crew.icon) emoji = crew.icon;
         else {
           const targetCard = cards.find(c => c.character === targetName);
-          if (targetCard && targetCard.emoji) emoji = targetCard.emoji + ' ';
+          if (targetCard && targetCard.emoji) emoji = targetCard.emoji;
         }
-        if (stat) {
-          targets.push(`${emoji}boosted by \`${pct}%\` of ${stat}`.trim());
-        } else {
-          targets.push(`${emoji}boosted by \`${pct}%\` of all stats`.trim());
+        // Group by percentage and stat to combine emojis
+        const key = `${pct}|${stat || 'all'}`;
+        if (!boostsByPct[key]) {
+          boostsByPct[key] = { emojis: [], pct, stat };
         }
+        if (emoji) boostsByPct[key].emojis.push(emoji);
       }
+      // Create boost lines with combined emojis
+      Object.values(boostsByPct).forEach(boost => {
+        const emojiStr = boost.emojis.join(' ');
+        if (boost.stat) {
+          targets.push(`${emojiStr} Boosted by \`${boost.pct}%\` of ${boost.stat}`.trim());
+        } else {
+          targets.push(`${emojiStr} Boosted by \`${boost.pct}%\` of all stats`.trim());
+        }
+      });
     }
     if (targets.length) {
-      statsLines.push(`**Boost:** ${targets.join(' ')}`);
+      statsLines.push(`**Boost:** ${targets.join('\n')}`);
     } else {
       statsLines.push(`**Boost:** Boost card`);
     }
@@ -400,13 +451,16 @@ function buildCardEmbed(cardDef, userEntry, avatarUrl, user) {
     if (cardDef.effect && cardDef.effectDuration) {
       const effectDesc = cardDef.effect === 'undead' && cardDef.itself
         ? 'Keeps itself alive at 1 HP until the effect ends'
-        : getEffectDescription(cardDef.effect, cardDef.effectDuration);
+        : getEffectDescription(cardDef.effect, cardDef.effectDuration, !!cardDef.itself);
       if (effectDesc) {
-        const amountLabel = ['regen', 'attackup', 'attackdown', 'defenseup', 'defensedown'].includes(cardDef.effect)
-        ? ` (${cardDef.effectAmount ?? (cardDef.effect === 'regen' ? 10 : 12)}%)`
-        : cardDef.effect === 'confusion'
-          ? ` (${cardDef.effectChance ?? 50}%)`
-            : '';
+        let amountLabel = '';
+        if (['regen', 'attackup', 'attackdown', 'defenseup', 'defensedown'].includes(cardDef.effect)) {
+          const percent = cardDef.effectAmount ?? (cardDef.effect === 'regen' ? 10 : 12);
+          amountLabel = ` \`${percent}%\``;
+        } else if (cardDef.effect === 'confusion') {
+          const percent = cardDef.effectChance ?? 50;
+          amountLabel = ` \`${percent}%\``;
+        }
         specialAttackValue += ` - *${effectDesc}${amountLabel}*`;
       }
     }
@@ -414,7 +468,7 @@ function buildCardEmbed(cardDef, userEntry, avatarUrl, user) {
   }
 
   if (cardDef.effect && (!cardDef.special_attack || !scaled.special_attack)) {
-    const effectDescription = getEffectDescription(cardDef.effect, cardDef.effectDuration || 0);
+    const effectDescription = getEffectDescription(cardDef.effect, cardDef.effectDuration || 0, !!cardDef.itself);
     if (effectDescription) {
       embed.addFields({ name: 'Effect', value: effectDescription, inline: false });
     }
@@ -494,24 +548,33 @@ function calculateFinalStats(cardDef, level, boostPct = 0) {
 }
 
 // expose helper for other modules to describe status effects on attacks
-function getEffectDescription(effectType, duration) {
+function getEffectDescription(effectType, duration, isSelf = false) {
   const isPermanent = duration === -1;
-  const durationText = isPermanent ? '' : ` for ${duration} turn${duration > 1 ? 's' : ''}`;
+  const durationText = isPermanent ? '' : `${duration} turn${duration > 1 ? 's' : ''}`;
+  const targetLabel = isSelf ? 'own' : `opponent's`;
   const effectDescriptions = {
-    'regen': `Regenerates HP each turn by ${durationText}`,
-    'confusion': `Gives${durationText} of chance to miss attacks`,
-    'attackup': isPermanent ? 'Permanently boosts attack by' : `Boosts attack${durationText}`,
-    'attackdown': isPermanent ? 'Permanently reduces attack by' : `Reduces attack${durationText}`,
-    'defenseup': isPermanent ? 'Permanently boosts defense by' : `Reduces incoming damage${durationText}`,
-    'defensedown': isPermanent ? 'Permanently reduces defense' : `Increases incoming damage${durationText}`,
-    'truesight': `Can't be attacked for ${durationText}`,
-    'undead': `Keeps the target alive at 0 HP until the effect ends`,
-    'stun': `Stuns the opponent ${durationText}`,
-    'freeze': `Freezes the opponent ${durationText}`,
-    'cut': `Cuts the opponent ${durationText}`,
+    regen: `Regenerates HP each turn${durationText ? ` for ${durationText}` : ''}`,
+    confusion: `Confuses the opponent${durationText ? ` for ${durationText}` : ''}`,
+    attackup: isPermanent
+      ? `Permanently boosts ${targetLabel} attack by`
+      : `Boosts ${targetLabel} attack${durationText ? ` for ${durationText}` : ''} by`,
+    attackdown: isPermanent
+      ? `Permanently reduces ${targetLabel} attack by`
+      : `Reduces ${targetLabel} attack${durationText ? ` for ${durationText}` : ''} by`,
+    defenseup: isPermanent
+      ? `Permanently boosts ${targetLabel} defense by`
+      : `Boosts ${targetLabel} defense${durationText ? ` for ${durationText}` : ''} by`,
+    defensedown: isPermanent
+      ? `Permanently reduces ${targetLabel} defense by`
+      : `Reduces ${targetLabel} defense${durationText ? ` for ${durationText}` : ''} by`,
+    truesight: `Can't be attacked${durationText ? ` for ${durationText}` : ''}`,
+    undead: `Keeps the target alive at 0 HP until the effect ends`,
+    stun: `Stuns the opponent${durationText ? ` for ${durationText}` : ''}`,
+    freeze: `Freezes the opponent${durationText ? ` for ${durationText}` : ''}`,
+    cut: `Cuts the opponent${durationText ? ` for ${durationText}` : ''}`,
     // bleed triggers when the affected card spends energy
     // (attack/special/ability); duration counts the number of uses
-    'bleed': `Bleeds the opponent for ${duration}`,
+    bleed: `Bleeds the opponent${durationText ? ` for ${durationText}` : ''}`,
   };
   return effectDescriptions[effectType] || null;
 }
@@ -530,5 +593,5 @@ module.exports = {
   getEffectDescription,
   getCardFinalStats,
   getAttributeEmoji,
-  simulatePull
+  simulatePull,
 };

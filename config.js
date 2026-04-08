@@ -4,21 +4,21 @@ const OWNER_ID = process.env.OWNER_ID; // developer ID for owner‑only commands
 // global pull rates (percentages, must sum to 100)
 const PULL_RATES = {
   D: 40,
-  C: 30,
-  B: 20,
+  C: 35,
+  B: 18,
   A: 5,
-  S: 3,
-  SS: 1.5,
-  UR: 0.5
+  S: 1.8,
+  SS: 0.2,
+  UR: 0
 };
 
 // pity constants
-const PITY_TARGET = 250;
+const PITY_TARGET = 100;
 // when pity is active, these are the conditional probabilities among S/SS/UR
 const PITY_DISTRIBUTION = {
   S: 80,
-  SS: 18,
-  UR: 2
+  SS: 20,
+  UR: 0
 };
 
 module.exports = {

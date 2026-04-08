@@ -46,7 +46,7 @@ module.exports = {
       let card = simulatePull(user.pityCount, matchedPack);
       if (!card) continue;
       // On 5th pull, 20% chance for a mastery 2 card instead, using the same rank probability system for M2s.
-      if (i === 4 && Math.random() < 0.2) {
+      if (i === 4 && Math.random() < 0.01) {
         const upgradeCard = simulatePull(user.pityCount, matchedPack, { mastery: 2 });
         if (upgradeCard) card = upgradeCard;
       }

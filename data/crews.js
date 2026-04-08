@@ -5,49 +5,49 @@ module.exports = [
   {
     name: "Strawhat Pirates",
     icon: '<:Strawats:1477827990397259858>',
-    packImage: 'https://files.catbox.moe/nln9m2.webp',
+    packImage: 'https://files.catbox.moe/yzb6ru.webp',
     rank: 'A'
   },
   {
     name: "Buggy Pirates",
     icon: '<:buggypirates:1479924477557997690>',
-    packImage: 'https://files.catbox.moe/t7edh4.webp',
+    packImage: 'https://files.catbox.moe/6jdjgs.webp',
     rank: 'A'
   },
   {
     name: "Cross Guild",
     icon: '<:CrossGuild:1480010003896340482>',
-    packImage: 'https://files.catbox.moe/h6t4lz.webp',
+    packImage: 'https://files.catbox.moe/tjvgbt.webp',
     rank: 'A'
   },
   {
     name: "Marines",
     icon: '<:Marines:1480016473794805760>',
-    packImage: 'https://files.catbox.moe/wjfs6h.webp',
-    rank: 'D'
+    packImage: 'https://files.catbox.moe/74j02n.webp',
+    rank: 'C'
   },
   {
     name: "Boroque Works",
     icon: '<:BoroqueWorks:1480254004150800607>',
-    packImage: 'https://files.catbox.moe/z4dbje.webp',
+    packImage: 'https://files.catbox.moe/33dxzb.webp',
     rank: 'A'
   },
   {
     name: "Red-Haired Pirates",
     icon: '<:redhairpirates:1489447902391570432>',
-    packImage: 'https://files.catbox.moe/eo4v6r.webp',
+    packImage: 'https://files.catbox.moe/pqtpc0.webp',
     rank: 'S'
   },
   {
     name: "Blackbeard Pirates",
     icon: '<:blackbeardpirates:1489679789076779319>',
-    packImage: 'https://files.catbox.moe/4bdw54.webp',
+    packImage: 'https://files.catbox.moe/e9muh7.webp',
     rank: 'S'
   },
   {
     name: "Whitebeard Pirates",
-    icon: 'EMOJI_PLACEHOLDER',
-    packImage: '',
+    icon: '<:whitrbeardpirates:1490852513174519929>',
+    packImage: 'https://files.catbox.moe/whvj21.webp',
     rank: 'S'
   },
 ];

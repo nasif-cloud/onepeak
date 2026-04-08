@@ -43,13 +43,13 @@ module.exports = {
     
     if (!user) {
       const reply = 'You don\'t have an account. Run `op start` or /start to register.';
-      if (message) return message.reply(reply);
+      if (message) return message.channel.send(reply);
       return interaction.reply({ content: reply, ephemeral: true });
     }
 
     if (!query) {
       const reply = 'Please specify a card name.';
-      if (message) return message.reply(reply);
+      if (message) return message.channel.send(reply);
       return interaction.reply({ content: reply, ephemeral: true });
     }
 
@@ -59,8 +59,8 @@ module.exports = {
     if (!card) {
       leveler = findFirstLeveler(query);
       if (!leveler) {
-        const reply = `No card or leveler found matching "${query}".`;
-        if (message) return message.reply(reply);
+        const reply = `No card or leveler found matching **${query}**.`;
+        if (message) return message.channel.send(reply);
         return interaction.reply({ content: reply, ephemeral: true });
       }
       isLeveler = true;
@@ -71,7 +71,7 @@ module.exports = {
       const item = user.items.find(i => i.itemId === leveler.id);
       if (!item || item.quantity < 1) {
         const reply = `You don't have ${leveler.name}.`;
-        if (message) return message.reply(reply);
+        if (message) return message.channel.send(reply);
         return interaction.reply({ content: reply, ephemeral: true });
       }
 
@@ -95,7 +95,7 @@ module.exports = {
     // Check if card is on team
     if (user.team && user.team.includes(card.id)) {
       const reply = `You can't sell **${card.character}** while they're on your team.`;
-      if (message) return message.reply(reply);
+      if (message) return message.channel.send(reply);
       return interaction.reply({ content: reply, ephemeral: true });
     }
 
@@ -103,7 +103,7 @@ module.exports = {
     const ownedEntry = user.ownedCards.find(e => e.cardId === card.id);
     if (!ownedEntry) {
       const reply = `You don't own that card.`;
-      if (message) return message.reply(reply);
+      if (message) return message.channel.send(reply);
       return interaction.reply({ content: reply, ephemeral: true });
     }
 

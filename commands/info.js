@@ -1,7 +1,11 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { findBestOwnedCard, buildCardEmbed, getCardFinalStats } = require('../utils/cards');
+const { findBestOwnedCard, buildCardEmbed, getCardFinalStats, getAttributeEmoji } = require('../utils/cards');
 const { sortedOwnedCards } = require('./collection');
 const User = require('../models/User');
+const { cards } = require('../data/cards');
+const { rods } = require('../data/rods');
+const { levelers } = require('../data/levelers');
+const crews = require('../data/crews');
 
 function makeInfoRow(index, total, cardDef) {
   const prevDisabled = index <= 0;
@@ -93,17 +97,186 @@ async function renderInfoCard(interaction, session, user, index) {
   return interaction.update({ embeds: [embed], components: [row] });
 }
 
+function getCrewByName(query) {
+  if (!query) return null;
+  const queryLower = query.toLowerCase().trim();
+  return crews.find(crew => crew.name.toLowerCase() === queryLower);
+}
+
+function parseEmojiUrl(emoji) {
+  if (!emoji || typeof emoji !== 'string') return null;
+  const match = emoji.match(/<a?:[^:]+:(\d+)>/);
+  return match ? `https://cdn.discordapp.com/emojis/${match[1]}.png` : null;
+}
+
+const attributeColors = {
+  STR: '#ff4b4b',
+  DEX: '#33cc33',
+  QCK: '#3498ff',
+  PSY: '#f5df4d',
+  INT: '#9b59b6',
+  ALL: '#9fa8da'
+};
+
+function getRodByName(query) {
+  if (!query) return null;
+  const q = query.toLowerCase().trim();
+  return rods.find(r => r.name.toLowerCase() === q || r.id.toLowerCase() === q) || null;
+}
+
+function getLevelerByName(query) {
+  if (!query) return null;
+  const q = query.toLowerCase().trim();
+  return levelers.find(l => l.name.toLowerCase() === q || l.id.toLowerCase() === q) || null;
+}
+
+function buildRodEmbed(rodDef, discordUser) {
+  const embed = new EmbedBuilder()
+    .setTitle(rodDef.name)
+    .setColor('#fdfeff')
+    .setThumbnail(parseEmojiUrl(rodDef.emoji))
+    .setDescription(`${rodDef.emoji}`)
+    .addFields(
+      { name: 'Multiplier', value: `\`${rodDef.multiplier}x\``, inline: true },
+      { name: 'Fishing speed', value: `\`${rodDef.multiplier}x\` faster nibble wait`, inline: true },
+      { name: 'Rarity bonus', value: `\`${rodDef.multiplier}x\` reward and rarity scaling`, inline: false },
+      { name: 'Luck bonus', value: `\`${Math.round((rodDef.luckBonus || 0) * 100)}%\``, inline: true },
+      { name: 'Cost', value: `${rodDef.cost.toLocaleString()} <:beri:1490738445319016651>`, inline: true }
+    );
+  if (discordUser) embed.setAuthor({ name: discordUser.username, iconURL: discordUser.displayAvatarURL() });
+  return embed;
+}
+
+function buildLevelerEmbed(levelerDef, discordUser) {
+  const xpValue = typeof levelerDef.xp === 'object'
+    ? Object.entries(levelerDef.xp).map(([attr, value]) => `**${attr}**: ${value}`).join('\n')
+    : `\`${levelerDef.xp}\``;
+  const descLines = [
+    `**Owned:** no`,
+    `**Rank:** ${levelerDef.rank}`,
+    `**Attribute:** ${getAttributeEmoji(levelerDef.attribute)}`,
+    `**Sell price:** <:beri:1490738445319016651> ${levelerDef.beli}`
+  ];
+  const embed = new EmbedBuilder()
+    .setTitle(levelerDef.name)
+    .setColor(attributeColors[levelerDef.attribute] || '#2b2d31')
+    .setThumbnail(parseEmojiUrl(levelerDef.emoji))
+    .setDescription(descLines.join('\n'))
+    .addFields({ name: 'XP awarded', value: xpValue, inline: false });
+  if (discordUser) embed.setAuthor({ name: discordUser.username, iconURL: discordUser.displayAvatarURL() });
+  return embed;
+}
+
+function buildPackEmbed(crewDef, discordUser) {
+  // Get all cards from this crew
+  const crewCards = cards.filter(c => c.faculty === crewDef.name);
+  
+  // Get unique cards by character, sorted by attribute then name
+  const uniqueByCharacter = new Map();
+  crewCards.forEach(c => {
+    if (!uniqueByCharacter.has(c.character)) {
+      uniqueByCharacter.set(c.character, c);
+    }
+  });
+  
+  // Attribute order: STR, DEX, QCK, PSY, INT
+  const attributeOrder = ['STR', 'DEX', 'QCK', 'PSY', 'INT'];
+  
+  // Sort by attribute, then by character name
+  const sortedCharacters = Array.from(uniqueByCharacter.values())
+    .sort((a, b) => {
+      const aAttrIdx = attributeOrder.indexOf(a.attribute || 'STR');
+      const bAttrIdx = attributeOrder.indexOf(b.attribute || 'STR');
+      if (aAttrIdx !== bAttrIdx) return aAttrIdx - bAttrIdx;
+      return a.character.localeCompare(b.character);
+    });
+  
+  const cardCount = uniqueByCharacter.size;
+  
+  // Define rank colors.
+  const rankColors = {
+    'D': '#f6efe9',    // Gray
+    'C': '#fff6ec',    // Green
+    'B': '#c6c6c7',    // Blue
+    'A': '#ecf5ff',    // Gold
+    'S': '#fff2f0',    // Tomato/Red
+    'SS': '#fce6fb',   // Purple
+    'UR': '#f1ffff'    // Turquoise
+  };
+  
+  const rankEmojis = {
+    'D': '<:D:1489355343262310401>',
+    'C': '<:C:1489355299844235395>',
+    'B': '<:B:1489355220848816198>',
+    'A': '<:A:1489355161318232093>',
+    'S': '<:S:1489355105388261446>',
+    'SS': '<:SS:1489355033819054121>',
+    'UR': '<:UR:1489354976039927869>'
+  };
+  
+  const rankColor = rankColors[crewDef.rank] || '#FFFFFF';
+  const rankEmoji = rankEmojis[crewDef.rank] || '';
+  
+  // Build character list with emojis, one per line
+  const characterLines = sortedCharacters.map(card => {
+    const emoji = card.emoji || '';
+    return `${emoji} ${card.character}`;
+  });
+  
+  // Join all characters (no limit)
+  const characterList = characterLines.join('\n');
+  
+  const embed = new EmbedBuilder()
+    .setTitle(`${crewDef.icon} ${crewDef.name}`)
+    .setColor(rankColor)
+    .setDescription(`**Rank:** ${crewDef.rank}\n**Cards:** ${cardCount}`)
+    .setImage(crewDef.packImage || '')
+    .setAuthor({ name: discordUser.username, iconURL: discordUser.displayAvatarURL() });
+  
+  if (characterList) {
+    embed.addFields({ name: 'Characters', value: characterList, inline: false });
+  }
+  
+  return embed;
+}
+
 module.exports = {
   name: 'info',
-  description: 'Show ownership and history of a card',
-  options: [{ name: 'query', type: 3, description: 'Card name', required: true }],
+  description: 'Show ownership and history of a card or pack info',
+  options: [{ name: 'query', type: 3, description: 'Card name or pack name', required: true }],
   async execute({ message, interaction, args }) {
     const query = message ? args.join(' ') : interaction.options.getString('query');
     const userId = message ? message.author.id : interaction.user.id;
+    const discordUser = message ? message.author : interaction.user;
+    
+    // First, check if query matches a crew/pack name
+    const crewDef = getCrewByName(query);
+    if (crewDef) {
+      const packEmbed = buildPackEmbed(crewDef, discordUser);
+      if (message) return message.channel.send({ embeds: [packEmbed] });
+      return interaction.reply({ embeds: [packEmbed] });
+    }
+
+    // Then check exact rod and leveler names only
+    const rodDef = getRodByName(query);
+    if (rodDef) {
+      const rodEmbed = buildRodEmbed(rodDef, discordUser);
+      if (message) return message.channel.send({ embeds: [rodEmbed] });
+      return interaction.reply({ embeds: [rodEmbed] });
+    }
+
+    const levelerDef = getLevelerByName(query);
+    if (levelerDef) {
+      const levelerEmbed = buildLevelerEmbed(levelerDef, discordUser);
+      if (message) return message.channel.send({ embeds: [levelerEmbed] });
+      return interaction.reply({ embeds: [levelerEmbed] });
+    }
+
+    // Otherwise, fall back to card lookup
     const cardDef = await findBestOwnedCard(userId, query);
     if (!cardDef) {
-      const reply = `No card found called **${query}**.`;
-      if (message) return message.reply(reply);
+      const reply = `No card or pack found matching **${query}**.`;
+      if (message) return message.channel.send(reply);
       return interaction.reply({ content: reply, ephemeral: true });
     }
 

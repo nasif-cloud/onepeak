@@ -9,7 +9,7 @@ exports.rankData = {
   UR: { color: '#E0115F', badge: 'https://files.catbox.moe/07p0m2.png' }
 };
 
-// ID generation with collision handling
+// ID generation with collision handling.
 // Format: First letters of name parts + Rank + Upgrade version
 // Example: Monkey D. Luffy, Rank B, U1 = "MDLB1"
 // Example: Alvida, Rank A, U2 = "AAA2" (collision handling adds more letters)
@@ -1468,7 +1468,7 @@ const consolidatedCardData = [
     alias: ['pururu'],
     upgradeTotal: 1,
     pullable: true,
-    attribute: 'INT',
+    attribute: 'PSY',
     emoji: '<:Pururu:1489447903192682527>',
     title: '"Trembling" Pururu - Princess of the Bourgeois Pirates',
     faculty: 'Red-Haired Pirates',

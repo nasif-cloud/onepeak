@@ -66,7 +66,7 @@ module.exports = {
       .setTitle(`${username}'s Profile`)
       .setThumbnail(avatarUrl)
       .addFields(
-        { name: 'Bounty', value: `¥${user.bounty || 100}`, inline: true },
+        { name: 'Bounty', value: `<:bounty:1490738541448400976>${user.bounty || 100}`, inline: true },
         { name: '**Rankings**', value: `Wealth: #${wealthRank}\nBounty: #${bountyRank}\nDex: #${dexRank}`, inline: false },
         { name: '**Statistics**', value: `Total Pulls: **${user.totalPulls || 0}**\nUnique Cards: **${uniqueCardsCount}** / ${totalCardsCount}`, inline: false }
       );

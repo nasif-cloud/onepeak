@@ -46,7 +46,7 @@ function fuzzyMatch(query, candidates) {
 }
 
 const SHOP_ITEMS = {
-  'reset token': { name: 'Reset Token', cost: 250, type: 'item' }
+  'reset token': { name: 'Reset Token', cost: 500, type: 'item' }
 };
 
 // Add rods to shop items (excluding basic which is not purchaseable)
@@ -81,7 +81,7 @@ module.exports = {
     let user = await User.findOne({ userId });
     if (!user) {
       const reply = 'You don\'t have an account. Run `op start` or /start to register.';
-      if (message) return message.reply(reply);
+      if (message) return message.channel.send(reply);
       return interaction.reply({ content: reply, ephemeral: true });
     }
 

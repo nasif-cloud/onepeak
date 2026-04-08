@@ -211,8 +211,11 @@ function buildEmbed(state) {
   const p1Alive = state.player1Cards.filter(c => c.currentHP > 0);
   if (p1Alive.length > 0) {
     for (const c of p1Alive) {
-      const statusEmojis = (c.status || []).map(st => STATUS_EMOJIS[st.type] || '').join('');
-      const prefix = statusEmojis || (c.def.emoji || '');
+      const statusEmojis = (c.status || []).map(st => {
+        const emoji = STATUS_EMOJIS[st.type] || '';
+        return st.stacks && st.stacks > 1 ? `${emoji}x${st.stacks}` : emoji;
+      }).join(' ');
+      const prefix = `${c.def.emoji || ''} ${statusEmojis}`.trim();
       const idx = state.player1Cards.indexOf(c);
       const isSelected = state.selected !== null && idx === state.selected && state.turn === 'player1';
       const level = c.userEntry ? c.userEntry.level : 1;
@@ -234,8 +237,11 @@ function buildEmbed(state) {
   const p2Alive = state.player2Cards.filter(c => c.currentHP > 0);
   if (p2Alive.length > 0) {
     for (const c of p2Alive) {
-      const statusEmojis = (c.status || []).map(st => STATUS_EMOJIS[st.type] || '').join('');
-      const prefix = statusEmojis || (c.def.emoji || '');
+      const statusEmojis = (c.status || []).map(st => {
+        const emoji = STATUS_EMOJIS[st.type] || '';
+        return st.stacks && st.stacks > 1 ? `${emoji}x${st.stacks}` : emoji;
+      }).join(' ');
+      const prefix = `${c.def.emoji || ''} ${statusEmojis}`.trim();
       const idx = state.player2Cards.indexOf(c);
       const isSelected = state.selected !== null && idx === state.selected && state.turn === 'player2';
       const level = c.userEntry ? c.userEntry.level : 1;
@@ -753,7 +759,7 @@ module.exports = {
     const starterUser = disc1.username; // disc1 has higher speed
     const acceptEmbed = new EmbedBuilder()
       .setColor('#FFFFFF')
-      .setDescription(`** <a:duelxbounty:1489629169506713600> ${discordUser1.username} challenged you to a duel! **\n\n${discordUser1.username}'s team \n ${challengerTeamLines}\n\n-# ${starterUser} would start this duel first.`);
+      .setDescription(`** <:bounty:1490738541448400976> ${discordUser1.username} challenged you to a duel! **\n\n${discordUser1.username}'s team \n ${challengerTeamLines}\n\n-# ${starterUser} would start this duel first.`);
     
     const acceptRow = new ActionRowBuilder()
       .addComponents(
@@ -1053,7 +1059,7 @@ module.exports = {
           try {
             let desc = `${card.def.character} uses ${card.def.special_attack.name || 'Special Attack'}!`;
             if (card.def.effect && card.def.effectDuration) {
-              const effectDesc = getEffectDescription(card.def.effect, card.def.effectDuration);
+              const effectDesc = getEffectDescription(card.def.effect, card.def.effectDuration, !!card.def.itself);
               if (effectDesc) desc += `\n*${effectDesc}*`;
             }
             const gifEmbed = new EmbedBuilder()
@@ -1287,7 +1293,7 @@ module.exports = {
             try {
               let desc = `${card.def.character} uses ${card.def.special_attack.name || 'Special Attack'}!`;
               if (card.def.effect && card.def.effectDuration) {
-                const effectDesc = getEffectDescription(card.def.effect, card.def.effectDuration);
+                const effectDesc = getEffectDescription(card.def.effect, card.def.effectDuration, !!card.def.itself);
                 if (effectDesc) desc += `\n*${effectDesc}*`;
               } else if (effectSummary) {
                 // fallback to previous short summary if no duration available
@@ -1310,7 +1316,7 @@ module.exports = {
         effectLogs.forEach(l => appendLog(state, l));
 
         const cost = act === 'attack' ? 1 : act === 'special' ? 3 : 1;
-        const effectivenessStr = attrMultiplier > 1 ? ' (super effective)' : attrMultiplier < 1 ? ' (not very effective)' : '';
+        const effectivenessStr = attrMultiplier > 1 ? ' (Effective!)' : attrMultiplier < 1 ? ' (Weak)' : '';
         const effectMessages = effectLogs.length > 0 ? ` *${effectLogs.join(', ')}*` : '';
         let actionText;
         if (act === 'special') {

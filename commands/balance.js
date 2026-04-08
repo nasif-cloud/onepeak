@@ -47,23 +47,15 @@ module.exports = {
       .setTitle(`${username}'s Balance`)
       .setThumbnail(avatarUrl)
       .addFields(
-        { name: '**Balance**', value: `¥ ${balance}\n<:gem:1479922885161128017> ${user.gems || 0}`, inline: false },
-        { name: '**Reset Tokens**', value: `<:reset:1483825882341703692> ${resetTokens}`, inline: false }
+        { name: '**Balance**', value: `<:beri:1490738445319016651> ${balance}\n<:gem:1490741488081043577> ${user.gems || 0}`, inline: false },
+        { name: '**Reset Tokens**', value: `<:resettoken:1490738386540171445> ${resetTokens}`, inline: false }
       );
-
-    const shopButton = new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId(`balance:shop:${userId}`)
-        .setLabel('Shop')
-        .setEmoji('<:shop:1483823263091265777>')
-        .setStyle(ButtonStyle.Primary)
-    );
 
     let msg;
     if (message) {
-      msg = await message.channel.send({ embeds: [embed], components: [shopButton] });
+      msg = await message.channel.send({ embeds: [embed] });
     } else {
-      msg = await interaction.reply({ embeds: [embed], components: [shopButton], fetchReply: true });
+      msg = await interaction.reply({ embeds: [embed], fetchReply: true });
     }
 
     setTimeout(() => {

@@ -118,7 +118,7 @@ const levelers = [
     id: 'rainbow_hermit_crab',
     name: 'Rainbow Hermit Crab',
     emoji: '<:rainbowhermitcrab:1490356387811819520>',
-    attribute: 'ALL',
+    attribute: 'INT',
     rank: 'A',
     xp: { INT: 100, QCK: 25, DEX: 25, STR: 25, PSY: 25 },
     beli: 100
@@ -127,16 +127,16 @@ const levelers = [
     id: 'rainbow_robber_penguin',
     name: 'Rainbow Robber Penguin',
     emoji: '<:rainbowrobberpenguin:1490356754691784754>',
-    attribute: 'ALL',
+    attribute: 'INT',
     rank: 'A',
     xp: { INT: 100, QCK: 20, DEX: 20, STR: 20, PSY: 20 },
     beli: 100
   },
   {
-    id: 'rainbow_stripped_dragon',
-    name: 'Rainbow Stripped Dragon',
+    id: 'rainbow_dragon',
+    name: 'Rainbow Dragon',
     emoji: '<:rainbowstrippeddragon:1490357034925821992>',
-    attribute: 'ALL',
+    attribute: 'INT',
     rank: 'SS',
     xp: { INT: 300, QCK: 100, DEX: 100, STR: 100, PSY: 100 },
     beli: 200

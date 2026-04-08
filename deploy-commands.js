@@ -8,6 +8,11 @@ const commands = [];
 commands.push({ name: 'start', description: 'Register an account with the One Piece bot' });
 commands.push({ name: 'pull', description: 'Pull a random card (uses 1 pull)' });
 commands.push({
+  name: 'card',
+  description: 'Display a card\'s information and stats',
+  options: [{ name: 'query', type: 3, description: 'Partial or full card name', required: true }]
+});
+commands.push({
   name: 'info',
   description: 'Show ownership info for a card',
   options: [{ name: 'query', type: 3, description: 'Partial or full card name', required: true }]
@@ -51,6 +56,13 @@ commands.push({
 
 // infinite sail battle
 commands.push({ name: 'isail', description: 'Challenge the Infinite Sail' });
+
+// duel command
+commands.push({
+  name: 'duel',
+  description: 'Challenge another player to a team duel',
+  options: [{ name: 'opponent', type: 6, description: 'User to duel (optional)', required: false }]
+});
 
 // shop & economy
 commands.push({ name: 'shop', description: 'View the shop' });
@@ -125,6 +137,9 @@ commands.push({
     { name: 'amount', type: 4, description: 'Amount to feed (default 1)', required: false }
   ]
 });
+
+// help command
+commands.push({ name: 'help', description: 'View all available commands organized by category' });
 
 const token = process.env.DISCORD_TOKEN || process.env.TOKEN;
 const rest = new REST({ version: '10' }).setToken(token);
